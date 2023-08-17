@@ -460,6 +460,15 @@ mod tests {
             )
             .unwrap();
         assert_eq!(result.get(0).unwrap().id, patient_row.id);
+        let result = repo
+            .query_by_filter(
+                PatientFilter::new()
+                    .name_or_code(StringFilter::equal_to("codePatient"))
+                    .identifier(StringFilter::like("not existing")),
+                None,
+            )
+            .unwrap();
+        assert_eq!(result.len(), 0);
     }
 
     #[actix_rt::test]
