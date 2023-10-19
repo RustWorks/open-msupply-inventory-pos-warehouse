@@ -82,14 +82,15 @@ fn map_result(
                 CentralPatientRequestError::InternalError(_) => {
                     StandardGraphqlError::InternalError(formatted_error)
                 }
-                CentralPatientRequestError::ConnectionError(_) => {
+                CentralPatientRequestError::ConnectionError(err) => {
+                    log::error!("link_patient_to_store: {}", err);
                     return Ok(LinkPatientToStoreResponse::Error(
                         LinkPatientPatientToStoreError {
                             error: LinkPatientToStoreErrorInterface::ConnectionError(
                                 ConnectionError,
                             ),
                         },
-                    ))
+                    ));
                 }
             };
 

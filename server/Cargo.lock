@@ -2310,6 +2310,7 @@ dependencies = [
  "graphql_core",
  "graphql_general",
  "graphql_types",
+ "log",
  "repository",
  "reqwest",
  "serde 1.0.137",
