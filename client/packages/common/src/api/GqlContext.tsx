@@ -106,7 +106,6 @@ class GQLClient extends GraphQLClient {
     }
 
     if (shouldSaveRequestTime(document)) this.lastRequestTime = new Date();
-    // console.log('this.lastRequestTime', this.lastRequestTime);
 
     const response = options.document
       ? this.client.request(options)
@@ -187,11 +186,6 @@ export const GqlProvider: FC<PropsWithChildren<ApiProviderProps>> = ({
     },
     [client]
   );
-
-  useEffect(() => {
-    if (skipRequest) client.setSkipRequest(skipRequest);
-    if (url) client.setEndpoint(url);
-  }, [url, skipRequest]);
 
   const val = useMemo(
     () => ({

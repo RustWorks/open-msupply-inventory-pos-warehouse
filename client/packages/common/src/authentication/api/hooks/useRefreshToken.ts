@@ -7,7 +7,7 @@ import {
 } from '@openmsupply-client/common';
 import { useGetRefreshToken } from './useGetRefreshToken';
 
-export const useRefreshToken = () => {
+export const useRefreshToken = (onTimeout: () => void) => {
   const { mutateAsync } = useGetRefreshToken();
   const {
     setHeader,
@@ -25,22 +25,28 @@ export const useRefreshToken = () => {
         })
       : 0;
 
-    // console.log('getLastRequestTime', getLastRequestTime());
-
     const minutesSinceLastRequest = DateUtils.differenceInMinutes(
       Date.now(),
       getLastRequestTime()
     );
 
+    console.log('minutesSinceLastRequest', minutesSinceLastRequest);
+    console.log('Cookie expires in', expiresIn);
+
     const expiresSoon = expiresIn === 1 || expiresIn === 2;
 
     if (expiresSoon && minutesSinceLastRequest < COOKIE_LIFETIME_MINUTES) {
+      console.log('Refreshing token');
       mutateAsync().then(data => {
         const token = data?.token ?? '';
         const newCookie = { ...authCookie, token };
         setAuthCookie(newCookie);
         setHeader('Authorization', `Bearer ${token}`);
       });
+    }
+    if (minutesSinceLastRequest >= COOKIE_LIFETIME_MINUTES) {
+      console.log('Timing out');
+      onTimeout();
     }
   };
   return { refreshToken };

@@ -13,7 +13,7 @@ import { RouteBuilder } from '../utils/navigation';
 import { matchPath } from 'react-router-dom';
 import { useGql } from '../api';
 
-export const COOKIE_LIFETIME_MINUTES = 60;
+export const COOKIE_LIFETIME_MINUTES = 5;
 const TOKEN_CHECK_INTERVAL = 60 * 1000;
 
 export enum AuthError {
@@ -107,7 +107,10 @@ export const AuthProvider: FC<PropsWithChildrenOnly> = ({ children }) => {
     mostRecentCredentials,
   } = useLogin(setCookie);
   const getUserPermissions = useGetUserPermissions();
-  const { refreshToken } = useRefreshToken();
+  const { refreshToken } = useRefreshToken(() => {
+    Cookies.remove('auth');
+    setError(AuthError.Timeout);
+  });
   const { setHeader } = useGql();
   const mostRecentUsername = mostRecentCredentials[0]?.username ?? undefined;
 
@@ -169,6 +172,7 @@ export const AuthProvider: FC<PropsWithChildrenOnly> = ({ children }) => {
     // check every minute for a valid token
     // if the cookie has expired, raise an auth error
     const timer = window.setInterval(() => {
+      console.log('Checking...');
       const authCookie = getAuthCookie();
       const { token } = authCookie;
       const isInitScreen = matchPath(
@@ -185,11 +189,13 @@ export const AuthProvider: FC<PropsWithChildrenOnly> = ({ children }) => {
       if (isNotAuthPath) return;
 
       if (!token) {
+        console.log('No token, setting auth error');
         setError(AuthError.Timeout);
         window.clearInterval(timer);
         return;
       }
 
+      console.log('Running refresh token...');
       refreshToken();
     }, TOKEN_CHECK_INTERVAL);
     return () => window.clearInterval(timer);
