@@ -18,6 +18,35 @@ import { StocktakeSummaryItem } from '../../../types';
 import { StocktakeLineFragment } from '../../api';
 import { useStocktakeLineErrorContext } from '../../context';
 
+const useColumnDefinition = () => {
+  const t = useTranslation();
+
+  const getColumnDefinition = <T extends object>({
+    row,
+    getValue,
+    defaultMultiple = t('multiple'),
+    defaultSingle = '',
+  }: {
+    row: T | { lines: T[] };
+    getValue: (_: T) => string | number;
+    defaultMultiple?: string;
+    defaultSingle?: string;
+  }) => {
+    if ('lines' in row) {
+      const { lines } = row;
+      const values = lines.flatMap(row => {
+        const value = getValue(row);
+        return !!value ? [{ value }] : [];
+      });
+
+      return ArrayUtils.ifTheSameElseDefault(values, 'value', defaultMultiple);
+    } else {
+      return getValue(row) ?? defaultSingle;
+    }
+  };
+  return getColumnDefinition;
+};
+
 interface UseStocktakeColumnOptions {
   sortBy: SortBy<StocktakeLineFragment | StocktakeSummaryItem>;
   onChangeSortBy: (
@@ -62,6 +91,7 @@ export const useStocktakeColumns = ({
 >[] => {
   const { getError } = useStocktakeLineErrorContext();
   const t = useTranslation();
+  const getColumnDefinition = useColumnDefinition();
 
   return useColumns<StocktakeLineFragment | StocktakeSummaryItem>(
     [
@@ -102,31 +132,10 @@ export const useStocktakeColumns = ({
       [
         'batch',
         {
-          getSortValue: row => {
-            if ('lines' in row) {
-              const { lines } = row;
-              return (
-                ArrayUtils.ifTheSameElseDefault(
-                  lines,
-                  'batch',
-                  t('multiple')
-                ) ?? ''
-              );
-            } else {
-              return row.batch ?? '';
-            }
-          },
-          accessor: ({ rowData }) => {
-            if ('lines' in rowData) {
-              const { lines } = rowData;
-              return ArrayUtils.ifTheSameElseDefault(
-                lines,
-                'batch',
-                t('multiple')
-              );
-            } else {
-              return rowData.batch;
-            }
+          getSortValue: row =>
+            getColumnDefinition({ row, getValue: row => row.batch ?? '' }),
+          accessor: ({ rowData: row }) => {
+            getColumnDefinition({ row, getValue: row => row.batch ?? '' });
           },
         },
       ],
@@ -165,41 +174,16 @@ export const useStocktakeColumns = ({
       [
         'location',
         {
-          getSortValue: row => {
-            if ('lines' in row) {
-              const locations = row.lines.flatMap(({ location }) =>
-                !!location ? [location] : []
-              );
-              if (locations.length !== 0) {
-                return ArrayUtils.ifTheSameElseDefault(
-                  locations,
-                  'code',
-                  t('multiple')
-                );
-              } else {
-                return '';
-              }
-            } else {
-              return row.location?.code ?? '';
-            }
-          },
-          accessor: ({ rowData }) => {
-            if ('lines' in rowData) {
-              const locations = rowData.lines.flatMap(({ location }) =>
-                !!location ? [location] : []
-              );
-
-              if (locations.length !== 0) {
-                return ArrayUtils.ifTheSameElseDefault(
-                  locations,
-                  'code',
-                  t('multiple')
-                );
-              }
-            } else {
-              return rowData.location?.code ?? '';
-            }
-          },
+          getSortValue: row =>
+            getColumnDefinition({
+              row,
+              getValue: row => row.location?.code ?? '',
+            }),
+          accessor: ({ rowData: row }) =>
+            getColumnDefinition({
+              row,
+              getValue: row => row.location?.code ?? '',
+            }),
         },
       ],
       [
