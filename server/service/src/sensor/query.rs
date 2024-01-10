@@ -68,9 +68,10 @@ pub fn get_sensor_logs_for_breach(
                 | TemperatureBreachRowType::HotCumulative => {
                     // Cumulative breach can include any time on the same day (can only be at most one of hot/cold starting per day)
                     let zero_time = NaiveTime::parse_from_str("00:00", "%H:%M").unwrap(); // hard-coded -> should always work!
-                    let start_breach = NaiveDateTime::new(breach_record.start_datetime.date(), zero_time); // set to start of day
+                    let start_breach =
+                        NaiveDateTime::new(breach_record.start_datetime.date(), zero_time); // set to start of day
                     let mut end_breach = end_datetime;
-                    if end_datetime.date() == start_breach.date() { 
+                    if end_datetime.date() == start_breach.date() {
                         // If ending on the same day, then extend to midnight
                         end_breach = start_breach + Duration::days(1);
                     }
@@ -119,5 +120,90 @@ pub fn get_sensor_logs_for_breach(
         Ok(temperature_logs)
     } else {
         Err(RepositoryError::NotFound)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use repository::{
+        mock::{mock_store_a, MockData, MockDataInserts},
+        SensorRow, TemperatureBreachRow, TemperatureBreachRowType, TemperatureLogRow,
+    };
+    use util::create_datetime;
+
+    use crate::{
+        sensor::query::get_sensor_logs_for_breach,
+        test_helpers::{setup_all_with_data_and_service_provider, ServiceTestContext},
+    };
+
+    #[actix_rt::test]
+    async fn test_get_sensors_for_breach() {
+        let sensor1 = SensorRow {
+            id: "sensor1".to_string(),
+            serial: "sensor1".to_string(),
+            store_id: mock_store_a().id.clone(),
+            ..Default::default()
+        };
+
+        let breach1 = TemperatureBreachRow {
+            id: "breach1".to_string(),
+            sensor_id: sensor1.id.clone(),
+            store_id: mock_store_a().id.clone(),
+            start_datetime: create_datetime(2022, 06, 03, 00, 00, 00).unwrap(),
+            end_datetime: create_datetime(2022, 06, 03, 18, 56, 00),
+            threshold_minimum: 2.0,
+            r#type: TemperatureBreachRowType::ColdCumulative,
+            ..Default::default()
+        };
+
+        // Sensor 1 (S1)
+        let temperature_logs: Vec<TemperatureLogRow> = vec![
+            ((2022, 06, 02), (23, 51), -5.3), // 0
+            ((2022, 06, 02), (23, 56), -5.3), // 1
+            ((2022, 06, 03), (00, 01), -5.4), // 2
+            ((2022, 06, 03), (00, 06), -5.3), // 3
+            ((2022, 06, 03), (18, 31), 23.7), // 4
+            ((2022, 06, 03), (18, 36), 12.9), // 5
+            ((2022, 06, 03), (18, 51), -0.1), // 6
+            ((2022, 06, 03), (18, 56), -1.9), // 7
+            ((2022, 06, 04), (00, 01), -5.6), // 8
+            ((2022, 06, 04), (00, 06), -5.6), // 9
+        ]
+        .into_iter()
+        .map(|(date, time, temperature)| TemperatureLogRow {
+            id: util::uuid::uuid(),
+            temperature,
+            sensor_id: sensor1.id.clone(),
+            store_id: mock_store_a().id.clone(),
+            datetime: create_datetime(date.0, date.1, date.2, time.0, time.1, 00).unwrap(),
+            temperature_breach_id: None, // can add to above tuple for further tests
+            ..Default::default()
+        })
+        .collect();
+
+        let ServiceTestContext { connection, .. } = setup_all_with_data_and_service_provider(
+            "test_get_sensors_for_breach",
+            MockDataInserts::none().stores().names(),
+            MockData {
+                sensors: vec![sensor1],
+                temperature_breaches: vec![breach1.clone()],
+                temperature_logs: temperature_logs.clone(),
+                ..MockData::default()
+            },
+        )
+        .await;
+
+        assert_eq!(
+            get_sensor_logs_for_breach(&connection, &breach1.id).map(|logs| logs
+                .into_iter()
+                .map(|log| log.temperature_log_row.id)
+                .collect::<Vec<String>>()),
+            Ok(vec![
+                temperature_logs[2].id.clone(),
+                temperature_logs[3].id.clone(),
+                temperature_logs[6].id.clone(),
+                temperature_logs[7].id.clone()
+            ])
+        );
     }
 }
