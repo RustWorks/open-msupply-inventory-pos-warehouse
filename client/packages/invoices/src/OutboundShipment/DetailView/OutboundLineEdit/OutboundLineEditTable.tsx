@@ -90,8 +90,7 @@ export const OutboundLineEditTable: React.FC<OutboundLineEditTableProps> = ({
   allocatedQuantity,
   batch,
 }) => {
-  const t = useTranslation('distribution');
-  const { packVariantExists } = usePackVariant(item?.id || '', null);
+  const { numberOfPacksFromQuantity } = usePackVariant(item?.id || '', null);
   const { orderedRows, placeholderRow } = useOutboundLineEditRows(
     rows,
     packSizeController,
@@ -108,13 +107,10 @@ export const OutboundLineEditTable: React.FC<OutboundLineEditTableProps> = ({
       placeholderRow.numberOfPacks = 0;
     }
   };
-  const unit =
-    packVariantExists || !item?.unitName ? t('label.unit') : item.unitName;
 
   const columns = useOutboundLineEditColumns({
-    itemId: item?.id,
+    item,
     onChange: onEditStockLine,
-    unit,
   });
 
   const additionalRows = [
@@ -124,7 +120,10 @@ export const OutboundLineEditTable: React.FC<OutboundLineEditTableProps> = ({
         <Divider margin={10} />
       </td>
     </tr>,
-    <TotalRow key="total-row" allocatedQuantity={allocatedQuantity} />,
+    <TotalRow
+      key="total-row"
+      allocatedQuantity={numberOfPacksFromQuantity(allocatedQuantity)}
+    />,
   ];
 
   return (

@@ -25,6 +25,8 @@ export const PackVariantCell =
       getUnitName(rowData)
     );
 
+    console.log('NAME', getUnitName(rowData));
+
     const packSizes = ArrayUtils.dedup(getPackSizes(rowData));
 
     const displayValue =

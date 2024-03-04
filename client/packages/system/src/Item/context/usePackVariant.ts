@@ -30,21 +30,21 @@ const usePackVariantStore = create<PackVariantState>(set => {
 type CommonAsPackVariant = (_: {
   packSize: number;
   packVariantName?: string;
-  variantName: string | null;
+  unitName: string | null;
   defaultPackVariant?: string;
   t: TypedTFunction<LocaleKey>;
 }) => string;
 const commonAsPackVariant: CommonAsPackVariant = ({
   packSize,
   packVariantName,
-  variantName,
+  unitName,
   defaultPackVariant,
   t,
 }) => {
   if (packVariantName) return packVariantName;
   if (defaultPackVariant) return defaultPackVariant;
   const packSizeDispaly = packSize > 1 ? `${packSize} x ` : '';
-  if (variantName) return `${packSizeDispaly}${variantName}`;
+  if (unitName) return `${packSizeDispaly}${unitName}`;
 
   const defaultVariant = t('label.unit');
   return `${packSizeDispaly} ${defaultVariant}`;
@@ -71,7 +71,7 @@ export const useRefreshPackVariant = () => {
 
 export const usePackVariant = (
   itemId: string,
-  variantName: string | null
+  unitName: string | null
 ): {
   // If pack variant not found, use defaultPackVariant rather than
   // {packSize} {unitName or 'Unit'}
@@ -95,11 +95,11 @@ export const usePackVariant = (
   if (!item || item.packVariants.length == 0) {
     return {
       asPackVariant: (packSize, defaultPackVariant) =>
-        commonAsPackVariant({ packSize, variantName, t, defaultPackVariant }),
+        commonAsPackVariant({ packSize, unitName, t, defaultPackVariant }),
       numberOfPacksFromQuantity: totalQuantity => totalQuantity,
       numberOfPacksToTotalQuantity: numPacks => numPacks,
       packVariantExists: false,
-      activePackVariant: commonAsPackVariant({ packSize: 1, variantName, t }),
+      activePackVariant: commonAsPackVariant({ packSize: 1, unitName, t }),
     };
   }
 
@@ -125,7 +125,7 @@ export const usePackVariant = (
 
       return commonAsPackVariant({
         packSize,
-        variantName,
+        unitName,
         packVariantName: foundVariant?.shortName,
         defaultPackVariant,
         t,
@@ -148,7 +148,7 @@ export const usePackVariant = (
     packVariantExists: true,
     activePackVariant: commonAsPackVariant({
       packSize: activeVariant.packSize,
-      variantName,
+      unitName,
       t,
     }),
   };

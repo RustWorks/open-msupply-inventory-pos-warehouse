@@ -12,7 +12,6 @@ import { ResponseLineFragment, useResponse } from './../api';
 import {
   PackVariantQuantityCell,
   PackVariantSelectCell,
-  usePackVariant,
 } from '@openmsupply-client/system';
 
 export const useResponseColumns = () => {

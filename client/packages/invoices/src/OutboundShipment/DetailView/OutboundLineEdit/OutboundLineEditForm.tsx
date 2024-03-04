@@ -74,8 +74,12 @@ export const OutboundLineEditForm: React.FC<OutboundLineEditFormProps> = ({
   const { format } = useFormatNumber();
   const { items } = useOutbound.line.rows();
 
-  const { variantsControl, activePackVariant, numberOfPacksFromQuantity } =
-    usePackVariant(item?.id ?? '', item?.unitName ?? null);
+  const {
+    variantsControl,
+    activePackVariant,
+    numberOfPacksFromQuantity,
+    numberOfPacksToTotalQuantity,
+  } = usePackVariant(item?.id ?? '', item?.unitName ?? null);
 
   const onChangePackSize = (newPackSize: number) => {
     const packSize = newPackSize === -1 ? 1 : newPackSize;
@@ -160,6 +164,8 @@ export const OutboundLineEditForm: React.FC<OutboundLineEditFormProps> = ({
     updateIssueQuantity,
   ]);
 
+  console.log('OPTION', packSizeController.selected?.value);
+
   return (
     <Grid container gap="4px">
       <ModalRow>
@@ -225,8 +231,18 @@ export const OutboundLineEditForm: React.FC<OutboundLineEditFormProps> = ({
             <ModalLabel label={t('label.issue')} />
             <NumericTextInput
               autoFocus
-              value={issueQuantity}
-              onChange={handleIssueQuantityChange}
+              value={
+                packSizeController.selected?.value == -1
+                  ? numberOfPacksFromQuantity(issueQuantity || 0)
+                  : issueQuantity
+              }
+              onChange={quantity =>
+                packSizeController.selected?.value == -1
+                  ? handleIssueQuantityChange(
+                      numberOfPacksToTotalQuantity(quantity || 0)
+                    )
+                  : handleIssueQuantityChange(quantity)
+              }
             />
             <Box marginLeft={1} />
 
