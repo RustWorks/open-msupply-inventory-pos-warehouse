@@ -11,15 +11,18 @@ import {
 } from '@openmsupply-client/common';
 import { DraftStockOutLine } from '../../../types';
 import { PackQuantityCell, StockOutLineFragment } from '../../../StockOut';
-import { PackVariantCell } from '@openmsupply-client/system';
+import { PackVariantCell, usePackVariant } from '@openmsupply-client/system';
 
 export const useOutboundLineEditColumns = ({
   onChange,
   unit,
+  itemId = '',
 }: {
   onChange: (key: string, value: number, packSize: number) => void;
   unit: string;
+  itemId?: string;
 }) => {
+  const { numberOfPacksFromQuantity } = usePackVariant(itemId, null);
   const { c } = useCurrency();
   const columns = useColumns<DraftStockOutLine>(
     [
@@ -92,7 +95,8 @@ export const useOutboundLineEditColumns = ({
         {
           label: 'label.unit-quantity-issued',
           labelProps: { unit },
-          accessor: ({ rowData }) => rowData.numberOfPacks * rowData.packSize,
+          accessor: ({ rowData }) =>
+            numberOfPacksFromQuantity(rowData.numberOfPacks * rowData.packSize),
           width: 120,
         },
       ],

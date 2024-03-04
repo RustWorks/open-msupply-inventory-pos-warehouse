@@ -1,7 +1,6 @@
 import React, { FC, useEffect, useMemo, useState } from 'react';
 import {
   useToggle,
-  useFormatNumber,
   useTranslation,
   AutocompleteWithPagination as Autocomplete,
   defaultOptionMapper,
@@ -43,7 +42,6 @@ export const StockItemSearchInput: FC<StockItemSearchInputProps> = ({
   const { data: currentItem } = useItemById(currentItemId ?? undefined);
 
   const t = useTranslation('common');
-  const formatNumber = useFormatNumber();
 
   const selectControl = useToggle();
 
@@ -98,10 +96,7 @@ export const StockItemSearchInput: FC<StockItemSearchInputProps> = ({
       onChange={(_, item) => onChange(item)}
       options={options}
       getOptionLabel={option => `${option.code}     ${option.name}`}
-      renderOption={getItemOptionRenderer(
-        t('label.units'),
-        formatNumber.format
-      )}
+      renderOption={getItemOptionRenderer()}
       width={width ? `${width}px` : '100%'}
       popperMinWidth={width}
       isOptionEqualToValue={(option, value) => option?.id === value?.id}

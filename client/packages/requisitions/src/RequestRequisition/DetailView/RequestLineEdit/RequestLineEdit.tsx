@@ -51,7 +51,7 @@ export const RequestLineEdit = ({
     variantsControl,
     numberOfPacksFromQuantity,
     numberOfPacksToTotalQuantity,
-  } = usePackVariant(item?.id ?? '', item?.name ?? null);
+  } = usePackVariant(currentItem?.id ?? '', currentItem?.unitName ?? null);
 
   const deletePreviousLine = () => {
     if (previousItemLineId && !isDisabled) deleteLine(previousItemLineId);

@@ -11,6 +11,7 @@ import {
 import { ResponseLineFragment, useResponse } from './../api';
 import {
   PackVariantQuantityCell,
+  PackVariantSelectCell,
   usePackVariant,
 } from '@openmsupply-client/system';
 
@@ -40,18 +41,12 @@ export const useResponseColumns = () => {
     ],
     {
       key: 'packUnit',
-      label: 'label.pack',
-      sortable: false,
-      accessor: ({ rowData }) => {
-        const { variantsControl } = usePackVariant(
-          rowData.item.id,
-          rowData.item.unitName ?? null
-        );
-
-        if (variantsControl) return variantsControl.activeVariant.longName;
-        else return rowData.item.unitName;
-      },
-      width: 130,
+      label: 'label.unit',
+      align: ColumnAlign.Right,
+      Cell: PackVariantSelectCell({
+        getItemId: r => r.itemId,
+        getUnitName: r => r.item.unitName || null,
+      }),
     },
     [
       'stockOnHand',

@@ -16,6 +16,7 @@ import {
 } from '@openmsupply-client/common';
 import {
   ItemStockOnHandFragment,
+  PackVariantSelect,
   StockItemSearchInput,
   usePackVariant,
 } from '@openmsupply-client/system';
@@ -73,10 +74,8 @@ export const OutboundLineEditForm: React.FC<OutboundLineEditFormProps> = ({
   const { format } = useFormatNumber();
   const { items } = useOutbound.line.rows();
 
-  const { activePackVariant } = usePackVariant(
-    item?.id ?? '',
-    item?.unitName ?? null
-  );
+  const { variantsControl, activePackVariant, numberOfPacksFromQuantity } =
+    usePackVariant(item?.id ?? '', item?.unitName ?? null);
 
   const onChangePackSize = (newPackSize: number) => {
     const packSize = newPackSize === -1 ? 1 : newPackSize;
@@ -192,18 +191,25 @@ export const OutboundLineEditForm: React.FC<OutboundLineEditFormProps> = ({
               }}
             >
               {t('label.available-quantity', {
-                number: availableQuantity.toFixed(0),
+                number: numberOfPacksFromQuantity(availableQuantity),
               })}
             </Typography>
           </Grid>
 
           <Grid style={{ display: 'flex' }} justifyContent="flex-end" flex={1}>
             <ModalLabel label={t('label.unit')} justifyContent="flex-end" />
-            <BasicTextInput
-              disabled
-              sx={{ width: 150 }}
-              value={activePackVariant}
-            />
+            {variantsControl ? (
+              <PackVariantSelect
+                sx={{ minWidth: 150 }}
+                variantControl={variantsControl}
+              />
+            ) : (
+              <BasicTextInput
+                disabled
+                sx={{ width: 150 }}
+                value={activePackVariant}
+              />
+            )}
           </Grid>
         </ModalRow>
       )}

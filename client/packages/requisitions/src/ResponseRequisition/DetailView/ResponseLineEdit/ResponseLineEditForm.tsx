@@ -8,7 +8,7 @@ import {
   useTranslation,
 } from '@openmsupply-client/common';
 import { DraftResponseLine } from './hooks';
-import { VariantControl } from '@openmsupply-client/system';
+import { PackVariantSelect, VariantControl } from '@openmsupply-client/system';
 
 interface ResponseLineEditFormProps {
   disabled: boolean;
@@ -102,10 +102,17 @@ export const ResponseLineEditForm = ({
           <InfoRow label={t('label.name')} value={item.name} />
           <InfoRow label={t('label.code')} value={item.code} />
           {variantsControl ? (
-            <InfoRow
-              label={t('label.pack')}
-              value={variantsControl.activeVariant.longName}
-            />
+            <Grid paddingTop={2}>
+              <InputWithLabelRow
+                Input={
+                  <PackVariantSelect
+                    sx={{ minWidth: 110 }}
+                    variantControl={variantsControl}
+                  />
+                }
+                label={t('label.unit')}
+              />
+            </Grid>
           ) : null}
         </>
       }

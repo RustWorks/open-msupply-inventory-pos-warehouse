@@ -12,6 +12,7 @@ import { useOutboundLineEditRows } from './hooks';
 import { useOutboundLineEditColumns } from './columns';
 import { DraftItem } from '../../..';
 import { PackSizeController, shouldUpdatePlaceholder } from '../../../StockOut';
+import { usePackVariant } from 'packages/system/src';
 
 export interface OutboundLineEditTableProps {
   onChange: (key: string, value: number, packSize: number) => void;
@@ -39,6 +40,10 @@ const PlaceholderRow = ({ line }: { line?: DraftStockOutLine }) => {
   const [placeholderBuffer, setPlaceholderBuffer] = useState(
     line?.numberOfPacks ?? 0
   );
+  const { numberOfPacksFromQuantity } = usePackVariant(
+    line?.item?.id || '',
+    null
+  );
 
   useEffect(() => {
     setPlaceholderBuffer(line?.numberOfPacks ?? 0);
@@ -52,7 +57,7 @@ const PlaceholderRow = ({ line }: { line?: DraftStockOutLine }) => {
       <PlaceholderCell style={{ textAlign: 'right' }}>1</PlaceholderCell>
       <PlaceholderCell colSpan={4}></PlaceholderCell>
       <PlaceholderCell style={{ textAlign: 'right' }}>
-        {placeholderBuffer}
+        {numberOfPacksFromQuantity(placeholderBuffer)}
       </PlaceholderCell>
     </tr>
   );
@@ -86,6 +91,7 @@ export const OutboundLineEditTable: React.FC<OutboundLineEditTableProps> = ({
   batch,
 }) => {
   const t = useTranslation('distribution');
+  const { packVariantExists } = usePackVariant(item?.id || '', null);
   const { orderedRows, placeholderRow } = useOutboundLineEditRows(
     rows,
     packSizeController,
@@ -102,9 +108,11 @@ export const OutboundLineEditTable: React.FC<OutboundLineEditTableProps> = ({
       placeholderRow.numberOfPacks = 0;
     }
   };
-  const unit = item?.unitName ?? t('label.unit');
+  const unit =
+    packVariantExists || !item?.unitName ? t('label.unit') : item.unitName;
 
   const columns = useOutboundLineEditColumns({
+    itemId: item?.id,
     onChange: onEditStockLine,
     unit,
   });
