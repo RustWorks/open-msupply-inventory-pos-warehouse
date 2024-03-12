@@ -54,6 +54,7 @@ impl From<TemperatureLogFilterInput> for TemperatureLogFilter {
             sensor: f.sensor.map(SensorFilterInput::into),
             location: f.location.map(LocationFilterInput::into),
             temperature_breach: f.temperature_breach.map(TemperatureBreachFilterInput::into),
+            temperature: None,
         }
     }
 }

@@ -181,6 +181,28 @@ impl EqualFilter<String> {
     }
 }
 
+#[derive(Clone, PartialEq, Debug, Default)]
+pub struct NumberFilter<T> {
+    pub greater_then: Option<T>,
+    pub less_then: Option<T>,
+}
+
+impl NumberFilter<f64> {
+    pub fn greater_then(value: f64) -> Self {
+        Self {
+            greater_then: Some(value),
+            ..Default::default()
+        }
+    }
+
+    pub fn less_then(value: f64) -> Self {
+        Self {
+            less_then: Some(value),
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct DatetimeFilter {
     pub equal_to: Option<NaiveDateTime>,
