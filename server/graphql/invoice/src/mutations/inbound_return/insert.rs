@@ -7,18 +7,44 @@ use graphql_core::{
     ContextExt,
 };
 use graphql_types::types::InvoiceNode;
-use service::auth::{Resource, ResourceAccessRequest};
 use service::invoice::inbound_return::insert::{
     InsertInboundReturn as ServiceInput, InsertInboundReturnError as ServiceError,
 };
 use service::invoice::inbound_return::InboundReturnLineInput as InboundReturnLineServiceInput;
+use service::{
+    auth::{Resource, ResourceAccessRequest},
+    invoice::inbound_return::insert::ShipmentOrNameId,
+};
+
+#[derive(Enum, Clone, Copy, PartialEq, Eq)]
+pub enum ShipmentOrNameTypeInput {
+    Shipment,
+    Name,
+}
+
+#[derive(InputObject)]
+pub struct ShipmentOrNameIdInput {
+    id: String,
+    r#type: ShipmentOrNameTypeInput,
+}
+
+impl ShipmentOrNameIdInput {
+    fn to_domain(self) -> ShipmentOrNameId {
+        use ShipmentOrNameId as to;
+        use ShipmentOrNameTypeInput as from;
+
+        match self.r#type {
+            from::Shipment => to::ShipmentId(self.id),
+            from::Name => to::NameId(self.id),
+        }
+    }
+}
 
 #[derive(InputObject)]
 #[graphql(name = "InboundReturnInput")]
 pub struct InsertInput {
     pub id: String,
-    pub customer_id: String,
-    pub outbound_shipment_id: Option<String>,
+    pub shipment_or_name_id: ShipmentOrNameIdInput,
     pub inbound_return_lines: Vec<InboundReturnLineInput>,
 }
 
@@ -119,15 +145,13 @@ impl InsertInput {
     pub fn to_domain(self) -> ServiceInput {
         let InsertInput {
             id,
-            customer_id,
-            outbound_shipment_id,
+            shipment_or_name_id,
             inbound_return_lines,
         }: InsertInput = self;
 
         ServiceInput {
             id,
-            other_party_id: customer_id,
-            outbound_shipment_id,
+            shipment_or_name_id: shipment_or_name_id.to_domain(),
             inbound_return_lines: inbound_return_lines
                 .into_iter()
                 .map(|line| line.to_domain())

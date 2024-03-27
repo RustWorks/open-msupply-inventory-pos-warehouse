@@ -10,6 +10,7 @@ import {
   ModalMode,
   Box,
   AlertColor,
+  ShipmentOrNameIdInput,
 } from '@openmsupply-client/common';
 import { useDraftInboundReturnLines } from './useDraftInboundReturnLines';
 import { ItemSelector } from './ItemSelector';
@@ -18,23 +19,21 @@ import { ReturnSteps, Tabs } from './ReturnSteps';
 interface InboundReturnEditModalProps {
   isOpen: boolean;
   outboundShipmentLineIds: string[];
-  customerId: string;
   onClose: () => void;
   modalMode: ModalMode | null;
   returnId?: string;
-  outboundShipmentId?: string;
+  shipmentOrNameId: ShipmentOrNameIdInput;
   initialItemId?: string | null;
 }
 
 export const InboundReturnEditModal = ({
   isOpen,
   outboundShipmentLineIds,
-  customerId,
+  shipmentOrNameId,
   onClose,
   modalMode,
   returnId,
   initialItemId,
-  outboundShipmentId,
 }: InboundReturnEditModalProps) => {
   const t = useTranslation('distribution');
   const { currentTab, onChangeTab } = useTabs(Tabs.Quantity);
@@ -54,10 +53,9 @@ export const InboundReturnEditModal = ({
 
   const { lines, update, save, addDraftLine } = useDraftInboundReturnLines({
     outboundShipmentLineIds,
-    customerId,
+    shipmentOrNameId,
     returnId,
     itemId,
-    outboundShipmentId,
   });
 
   const onOk = async () => {

@@ -18,11 +18,22 @@ use validate::validate;
 
 use super::InboundReturnLineInput;
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum ShipmentOrNameId {
+    ShipmentId(String),
+    NameId(String),
+}
+
+impl Default for ShipmentOrNameId {
+    fn default() -> Self {
+        Self::ShipmentId(Default::default())
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct InsertInboundReturn {
     pub id: String,
-    pub other_party_id: String,
-    pub outbound_shipment_id: Option<String>,
+    pub shipment_or_name_id: ShipmentOrNameId,
     pub inbound_return_lines: Vec<InboundReturnLineInput>,
 }
 
@@ -61,7 +72,7 @@ pub fn insert_inbound_return(
     let inbound_return: Invoice = ctx
         .connection
         .transaction_sync(|connection| {
-            let other_party = validate(connection, &ctx.store_id, &input)?;
+            let other_party = validate(ctx, &ctx.store_id, &input)?;
             let (inbound_return, insert_stock_in_lines, update_line_return_reasons) = generate(
                 connection,
                 &ctx.store_id,
@@ -149,7 +160,7 @@ mod test {
         service_provider::ServiceProvider,
     };
 
-    use super::InboundReturnLineInput;
+    use super::{InboundReturnLineInput, ShipmentOrNameId};
 
     #[actix_rt::test]
     async fn test_insert_inbound_return_errors() {
@@ -210,7 +221,8 @@ mod test {
                 &context,
                 inline_init(|r: &mut InsertInboundReturn| {
                     r.id = "new_id".to_string();
-                    r.outbound_shipment_id = Some("does_not_exist".to_string());
+                    r.shipment_or_name_id =
+                        ShipmentOrNameId::ShipmentId("does_not_exist".to_string());
                 })
             ),
             Err(ServiceError::OutboundShipmentDoesNotExist)
@@ -221,7 +233,8 @@ mod test {
                 &context,
                 inline_init(|r: &mut InsertInboundReturn| {
                     r.id = "new_id".to_string();
-                    r.outbound_shipment_id = Some(mock_outbound_shipment_a().id);
+                    r.shipment_or_name_id =
+                        ShipmentOrNameId::ShipmentId(mock_outbound_shipment_a().id);
                 })
             ),
             Err(ServiceError::OutboundShipmentDoesNotBelongToCurrentStore)
@@ -233,7 +246,8 @@ mod test {
                 &context,
                 inline_init(|r: &mut InsertInboundReturn| {
                     r.id = "new_id".to_string();
-                    r.outbound_shipment_id = Some(mock_outbound_return_a().id);
+                    r.shipment_or_name_id =
+                        ShipmentOrNameId::ShipmentId(mock_outbound_return_a().id);
                 })
             ),
             Err(ServiceError::OriginalInvoiceNotAnOutboundShipment)
@@ -246,7 +260,8 @@ mod test {
                 inline_init(|r: &mut InsertInboundReturn| {
                     r.id = "new_id".to_string();
                     // in NEW status
-                    r.outbound_shipment_id = Some(mock_outbound_shipment_e().id);
+                    r.shipment_or_name_id =
+                        ShipmentOrNameId::ShipmentId(mock_outbound_shipment_e().id);
                 })
             ),
             Err(ServiceError::CannotReturnOutboundShipment)
@@ -258,7 +273,7 @@ mod test {
                 &context,
                 inline_init(|r: &mut InsertInboundReturn| {
                     r.id = "new_id".to_string();
-                    r.other_party_id = "does_not_exist".to_string();
+                    r.shipment_or_name_id = ShipmentOrNameId::NameId("does_not_exist".to_string());
                 })
             ),
             Err(ServiceError::OtherPartyDoesNotExist)
@@ -270,7 +285,7 @@ mod test {
                 &context,
                 inline_init(|r: &mut InsertInboundReturn| {
                     r.id = "new_id".to_string();
-                    r.other_party_id = not_visible().id.clone();
+                    r.shipment_or_name_id = ShipmentOrNameId::NameId(not_visible().id.clone());
                 })
             ),
             Err(ServiceError::OtherPartyNotVisible)
@@ -282,7 +297,7 @@ mod test {
                 &context,
                 inline_init(|r: &mut InsertInboundReturn| {
                     r.id = "new_id".to_string();
-                    r.other_party_id = not_a_customer().id.clone();
+                    r.shipment_or_name_id = ShipmentOrNameId::NameId(not_a_customer().id.clone());
                 })
             ),
             Err(ServiceError::OtherPartyNotACustomer)
@@ -294,7 +309,7 @@ mod test {
                 &context,
                 InsertInboundReturn {
                     id: "new_id".to_string(),
-                    other_party_id: mock_name_customer_a().id,
+                    shipment_or_name_id: ShipmentOrNameId::NameId(mock_name_customer_a().id),
                     inbound_return_lines: vec![InboundReturnLineInput {
                         id: mock_inbound_return_a_invoice_line_a().id,
                         number_of_packs: 1.0,
@@ -315,7 +330,7 @@ mod test {
                 &context,
                 InsertInboundReturn {
                     id: "some_new_id".to_string(),
-                    other_party_id: mock_name_customer_a().id,
+                    shipment_or_name_id: ShipmentOrNameId::NameId(mock_name_customer_a().id),
                     inbound_return_lines: vec![InboundReturnLineInput {
                         id: "new_line_id".to_string(),
                         item_id: mock_item_a().id,
@@ -374,8 +389,9 @@ mod test {
                 &context,
                 inline_init(|r: &mut InsertInboundReturn| {
                     r.id = "new_inbound_return_id".to_string();
-                    r.other_party_id = mock_name_customer_a().id;
-                    r.outbound_shipment_id = Some(returnable_outbound_shipment().id);
+                    r.shipment_or_name_id = ShipmentOrNameId::NameId(mock_name_customer_a().id);
+                    r.shipment_or_name_id =
+                        ShipmentOrNameId::ShipmentId(returnable_outbound_shipment().id);
                     r.inbound_return_lines = vec![
                         InboundReturnLineInput {
                             id: "new_inbound_return_line_id".to_string(),

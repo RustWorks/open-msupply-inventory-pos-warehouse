@@ -4,22 +4,21 @@ import {
   GeneratedInboundReturnLineNode,
   InboundReturnLineInput,
   RecordPatch,
+  ShipmentOrNameIdInput,
 } from '@openmsupply-client/common';
 import { useReturns } from '../../api';
 import { useItemById } from '@openmsupply-client/system';
 
 export const useDraftInboundReturnLines = ({
-  customerId,
   outboundShipmentLineIds,
   itemId,
   returnId,
-  outboundShipmentId,
+  shipmentOrNameId,
 }: {
   outboundShipmentLineIds: string[];
-  customerId: string;
+  shipmentOrNameId: ShipmentOrNameIdInput;
   itemId?: string;
   returnId?: string;
-  outboundShipmentId?: string;
 }) => {
   const [draftLines, setDraftLines] = React.useState<
     GeneratedInboundReturnLineNode[]
@@ -116,8 +115,7 @@ export const useDraftInboundReturnLines = ({
     if (!returnId) {
       await insert({
         id: FnUtils.generateUUID(),
-        customerId,
-        outboundShipmentId,
+        shipmentOrNameId,
         inboundReturnLines,
       });
     } else {

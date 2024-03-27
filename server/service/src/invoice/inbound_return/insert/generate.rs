@@ -10,7 +10,7 @@ use crate::invoice_line::stock_in_line::StockInType;
 use crate::invoice_line::update_return_reason_id::UpdateLineReturnReason;
 use crate::number::next_number;
 
-use super::{InboundReturnLineInput, InsertInboundReturn};
+use super::{InboundReturnLineInput, InsertInboundReturn, ShipmentOrNameId};
 
 pub fn generate(
     connection: &StorageConnection,
@@ -18,8 +18,7 @@ pub fn generate(
     user_id: &str,
     InsertInboundReturn {
         id,
-        other_party_id,
-        outbound_shipment_id,
+        shipment_or_name_id,
         inbound_return_lines,
     }: InsertInboundReturn,
     other_party: Name,
@@ -37,14 +36,17 @@ pub fn generate(
     let inbound_return = InvoiceRow {
         id: invoice_id.clone(),
         user_id: Some(user_id.to_string()),
-        name_link_id: other_party_id,
+        name_link_id: other_party.name_row.id.clone(),
         r#type: InvoiceRowType::InboundReturn,
         invoice_number: next_number(connection, &NumberRowType::InboundReturn, store_id)?,
         name_store_id: other_party.store_id().map(|id| id.to_string()),
         store_id: store_id.to_string(),
         created_datetime: current_datetime,
         status: InvoiceRowStatus::New,
-        original_shipment_id: outbound_shipment_id,
+        original_shipment_id: match shipment_or_name_id {
+            ShipmentOrNameId::ShipmentId(id) => Some(id),
+            ShipmentOrNameId::NameId(_) => None,
+        },
         // Default
         on_hold: false,
         colour: None,

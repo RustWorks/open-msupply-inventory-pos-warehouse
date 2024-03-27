@@ -10,6 +10,7 @@ import {
   createQueryParamsStore,
   DetailTabs,
   useEditModal,
+  ShipmentOrNameTypeInput,
 } from '@openmsupply-client/common';
 import { ContentArea } from './ContentArea';
 import { Toolbar } from './Toolbar';
@@ -70,7 +71,11 @@ export const InboundReturnDetailView: FC = () => {
               isOpen={isOpen}
               onClose={onClose}
               outboundShipmentLineIds={[]}
-              customerId={data.otherPartyId}
+              shipmentOrNameId={{
+                // I think ideally we would either pass through returnId or this input
+                type: ShipmentOrNameTypeInput.Name,
+                id: data.otherPartyId,
+              }}
               returnId={data.id}
               initialItemId={itemId}
               modalMode={mode}

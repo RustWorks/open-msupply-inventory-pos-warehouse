@@ -13,6 +13,7 @@ import {
   useNotification,
   FileUtils,
   FnUtils,
+  ShipmentOrNameTypeInput,
 } from '@openmsupply-client/common';
 import { CustomerSearchModal } from '@openmsupply-client/system';
 import { useReturns } from '../api';
@@ -51,7 +52,10 @@ export const AppBarButtonsComponent: FC<{
           try {
             await onCreate({
               id: FnUtils.generateUUID(),
-              customerId: name?.id,
+              shipmentOrNameId: {
+                type: ShipmentOrNameTypeInput.Name,
+                id: name?.id,
+              },
               inboundReturnLines: [],
             });
           } catch (e) {

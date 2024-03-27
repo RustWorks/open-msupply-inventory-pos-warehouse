@@ -12,6 +12,7 @@ import {
   DetailTabs,
   ModalMode,
   useNotification,
+  ShipmentOrNameTypeInput,
 } from '@openmsupply-client/common';
 import { toItemRow, ActivityLogList } from '@openmsupply-client/system';
 import { ContentArea } from './ContentArea';
@@ -117,9 +118,11 @@ export const DetailView: FC = () => {
               isOpen={returnsIsOpen}
               onClose={onCloseReturns}
               outboundShipmentLineIds={outboundShipmentLineIds || []}
-              customerId={data.otherPartyId}
+              shipmentOrNameId={{
+                type: ShipmentOrNameTypeInput.Shipment,
+                id: data.id,
+              }}
               modalMode={returnModalMode}
-              outboundShipmentId={data.id}
             />
           )}
 

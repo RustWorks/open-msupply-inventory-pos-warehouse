@@ -1837,10 +1837,9 @@ export type InboundInvoiceCounts = {
 };
 
 export type InboundReturnInput = {
-  customerId: Scalars['String']['input'];
   id: Scalars['String']['input'];
   inboundReturnLines: Array<InboundReturnLineInput>;
-  outboundShipmentId?: InputMaybe<Scalars['String']['input']>;
+  shipmentOrNameId: ShipmentOrNameIdInput;
 };
 
 export type InboundReturnLineInput = {
@@ -5573,6 +5572,16 @@ export type SensorSortInput = {
 };
 
 export type SensorsResponse = SensorConnector;
+
+export type ShipmentOrNameIdInput = {
+  id: Scalars['String']['input'];
+  type: ShipmentOrNameTypeInput;
+};
+
+export enum ShipmentOrNameTypeInput {
+  Name = 'NAME',
+  Shipment = 'SHIPMENT'
+}
 
 export type SnapshotCountCurrentCountMismatch = UpdateStocktakeErrorInterface & {
   __typename: 'SnapshotCountCurrentCountMismatch';
