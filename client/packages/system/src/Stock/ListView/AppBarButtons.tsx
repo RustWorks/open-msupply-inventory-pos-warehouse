@@ -12,17 +12,20 @@ import {
 } from '@openmsupply-client/common';
 import { useStock } from '../api';
 import { stockLinesToCsv } from '../../utils';
+import { useExportStockList } from '../apiNEW/hooks/useExportStockList';
 
 export const AppBarButtonsComponent = () => {
   const { success, error } = useNotification();
   const t = useTranslation('distribution');
-  const { fetchAsync, isLoading } = useStock.line.listAll({
-    key: 'itemName',
-    direction: 'asc',
-  });
+  // const { fetchAsync, isLoading } = useStock.line.listAll({
+  //   key: 'itemName',
+  //   direction: 'asc',
+  // });
+  const { fetchAllStock, isLoading } = useExportStockList();
 
   const csvExport = async () => {
-    const data = await fetchAsync();
+    const { data } = await fetchAllStock();
+
     if (!data || !data?.nodes.length) {
       error(t('error.no-data'))();
       return;

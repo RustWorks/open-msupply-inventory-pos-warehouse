@@ -15,6 +15,7 @@ import {
 import { StockLineRowFragment, useStock } from '../api';
 import { ActivityLogList } from '../../ActivityLog';
 import { StockLineForm } from './StockLineForm';
+import { useStockLineEdit } from '../apiNEW/hooks/useStockLineEdit';
 
 interface StockLineEditModalProps {
   isOpen: boolean;
@@ -64,7 +65,8 @@ export const StockLineEditModal: FC<StockLineEditModalProps> = ({
     message: t('messages.confirm-save-stock-line'),
   });
 
-  const { draft, onUpdate, onSave } = useDraftStockLine(stockLine);
+  // const { draft, onUpdate, onSave } = useDraftStockLine(stockLine);
+  const { draft, updateDraft, saveStockLine } = useStockLineEdit(stockLine);
   const { dispatchEvent, addEventListener, removeEventListener } =
     usePluginEvents();
   const [hasChanged, setHasChanged] = useState(false);
@@ -76,7 +78,7 @@ export const StockLineEditModal: FC<StockLineEditModalProps> = ({
   const tabs = [
     {
       Component: (
-        <StockLineForm draft={draft} onUpdate={onUpdate} plugins={plugins} />
+        <StockLineForm draft={draft} onUpdate={updateDraft} plugins={plugins} />
       ),
       value: 'label.details',
     },
@@ -112,7 +114,7 @@ export const StockLineEditModal: FC<StockLineEditModalProps> = ({
           onClick={() =>
             getConfirmation({
               onConfirm: async () => {
-                await onSave();
+                await saveStockLine();
                 dispatchEvent('onSaveStockEditForm', new Event(draft.id));
                 onClose();
               },
