@@ -17,13 +17,13 @@ export const useRepack = (invoiceId: string) => {
     }
   };
 
-  const result = useQuery({
+  const query = useQuery({
     queryKey: ['stock', invoiceId],
     queryFn,
     enabled: invoiceId !== '',
   });
 
-  return result;
+  return query;
 };
 
 export const useRepackEdit = (init: Repack) => {

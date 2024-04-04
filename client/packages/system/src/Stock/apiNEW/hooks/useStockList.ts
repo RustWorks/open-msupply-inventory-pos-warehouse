@@ -29,7 +29,7 @@ export const useStockList = (queryParams: ListParams) => {
       ...filterBy,
       hasPacksInStore: true,
     };
-    const result = await stockApi.stockLines({
+    const query = await stockApi.stockLines({
       storeId,
       first: first,
       offset: offset,
@@ -37,12 +37,12 @@ export const useStockList = (queryParams: ListParams) => {
       desc: sortBy.isDesc,
       filter,
     });
-    const { nodes, totalCount } = result?.stockLines;
+    const { nodes, totalCount } = query?.stockLines;
     return { nodes, totalCount };
   };
 
-  const result = useQuery({ queryKey, queryFn });
-  return result;
+  const query = useQuery({ queryKey, queryFn });
+  return query;
 };
 
 const toSortField = (
