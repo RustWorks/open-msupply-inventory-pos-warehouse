@@ -77,13 +77,13 @@ export const RepackModal: FC<RepackModalControlProps> = ({
     numberOfPacks: 0,
   };
 
-  // const { data, isError, isLoading } = useStock.repack.list(
-  //   stockLine?.id ?? ''
-  // );
   const { data: logData } = useActivityLog.document.listByRecord(
     stockLine?.id ?? ''
   );
 
+  // const { data, isError, isLoading } = useStock.repack.list(
+  //   stockLine?.id ?? ''
+  // );
   // const { draft, onChange, onInsert } = useDraftRepack(defaultRepack);
   const { repacks, isError, isLoading, draft, onChange, onInsert } =
     useRepackEdit(defaultRepack);

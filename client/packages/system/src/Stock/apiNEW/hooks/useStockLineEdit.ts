@@ -1,22 +1,12 @@
 import {
-  FilterByWithBoolean,
   ObjUtils,
   RecordPatch,
-  SortBy,
-  UpdateStockLineInput,
   setNullableInput,
   useMutation,
 } from '@openmsupply-client/common';
 import { StockLineRowFragment } from '../../api/operations.generated';
 import { useGraphQL } from '../useGraphQL';
 import { useState } from 'react';
-
-export type ListParams = {
-  first: number;
-  offset: number;
-  sortBy: SortBy<StockLineRowFragment>;
-  filterBy: FilterByWithBoolean | null;
-};
 
 export const useStockLineEdit = (init: StockLineRowFragment) => {
   const { stockApi, storeId, queryClient } = useGraphQL();
@@ -32,7 +22,16 @@ export const useStockLineEdit = (init: StockLineRowFragment) => {
     const result =
       (await stockApi.updateStockLine({
         storeId,
-        input: toUpdatePatch(patch),
+        input: {
+          id: patch?.id,
+          location: setNullableInput('id', patch.location),
+          costPricePerPack: patch.costPricePerPack,
+          sellPricePerPack: patch.sellPricePerPack,
+          expiryDate: patch.expiryDate,
+          batch: patch.batch,
+          onHold: patch.onHold,
+          barcode: patch.barcode,
+        },
       })) || {};
 
     const { updateStockLine } = result;
@@ -55,16 +54,3 @@ export const useStockLineEdit = (init: StockLineRowFragment) => {
     saveStockLine: () => mutation.mutateAsync(stockLine),
   };
 };
-
-const toUpdatePatch = (
-  patch: RecordPatch<StockLineRowFragment>
-): UpdateStockLineInput => ({
-  id: patch?.id,
-  location: setNullableInput('id', patch.location),
-  costPricePerPack: patch.costPricePerPack,
-  sellPricePerPack: patch.sellPricePerPack,
-  expiryDate: patch.expiryDate,
-  batch: patch.batch,
-  onHold: patch.onHold,
-  barcode: patch.barcode,
-});
