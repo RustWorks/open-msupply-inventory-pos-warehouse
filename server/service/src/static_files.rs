@@ -4,14 +4,14 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime};
 
+use crate::service_provider::ServiceProvider;
+use anyhow::anyhow;
 use repository::sync_file_reference_row::{
     SyncFileReferenceRow, SyncFileReferenceRowRepository, SyncFileStatus,
 };
 use util::constants::SYSTEM_USER_ID;
 use util::is_central_server;
 use util::uuid::uuid;
-
-use crate::service_provider::ServiceProvider;
 
 #[derive(Debug, PartialEq)]
 pub struct StaticFile {
@@ -163,45 +163,26 @@ impl StaticFileService {
             ));
         }
 
-        let (table_name, record_id) = match category.clone() {
-            StaticFileCategory::SyncFile(table_name, record_id) => (table_name, record_id),
-            _ => {
-                return Err(anyhow::Error::msg(
-                    "Can't download file from central server, as it's not a sync file!",
-                ))
-            }
+        let StaticFileCategory::SyncFile(table_name, record_id) = &category else {
+            return Err(anyhow!(
+                "Can't download file from central server, as it's not a sync file!",
+            ));
         };
 
-        let ctx = service_provider
-            .context("NoStore".to_string(), SYSTEM_USER_ID.to_string())
-            .map_err(|_| anyhow::Error::msg("Can't create context"))?;
+        let ctx = service_provider.context("NoStore".to_string(), SYSTEM_USER_ID.to_string())?;
         let settings = service_provider
             .settings
-            .sync_settings(&ctx)
-            .map_err(|_| anyhow::Error::msg("Can't access sync settings"))?;
+            .sync_settings(&ctx)?
+            .ok_or(anyhow!("Can't download file as sync is not configured"))?;
 
-        let base_url = match settings {
-            Some(settings) => settings.file_upload_base_url(),
-            None => {
-                return Err(anyhow::Error::msg(
-                    "Can't download file as sync is not configured",
-                ))
-            }
-        };
+        let base_url = settings.file_upload_base_url();
 
         let sync_file_repo = SyncFileReferenceRowRepository::new(&ctx.connection);
 
         let sync_file_ref = sync_file_repo.find_one_by_id(&id)?;
 
-        let sync_file_ref = match sync_file_ref {
-            Some(sync_file_ref) => sync_file_ref,
-            None => {
-                return Err(anyhow::Error::msg(format!(
-                    "Can't find sync file reference with id: {}",
-                    id
-                )))
-            }
-        };
+        let sync_file_ref =
+            sync_file_ref.ok_or(anyhow!("Can't find sync file reference with id: {}", id))?;
 
         let file_name = sync_file_ref.file_name.clone();
         let download_url = format!("{}/{}/{}?id={}", base_url, table_name, record_id, id);
