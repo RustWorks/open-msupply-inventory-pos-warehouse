@@ -18,6 +18,7 @@ pub struct InsertStockOutLine {
     pub total_before_tax: Option<f64>,
     pub tax: Option<f64>,
     pub note: Option<String>,
+    pub inventory_adjustment_reason_id: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

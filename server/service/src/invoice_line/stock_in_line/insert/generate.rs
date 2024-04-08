@@ -2,6 +2,7 @@ use crate::{
     invoice::common::{calculate_total_after_tax, generate_invoice_user_id_update},
     invoice_line::{
         convert_invoice_line_to_single_pack, convert_stock_line_to_single_pack, generate_batch,
+        stock_in_line::StockInType,
     },
     store_preference::get_store_preferences,
     u32_to_i32,
@@ -22,6 +23,8 @@ pub fn generate(
 ) -> Result<(Option<InvoiceRow>, InvoiceLineRow, Option<StockLineRow>), RepositoryError> {
     let store_preferences = get_store_preferences(connection, &existing_invoice_row.store_id)?;
 
+    let stock_in_type = input.r#type.clone();
+
     let new_line = generate_line(input, item_row, existing_invoice_row.clone());
 
     let mut new_line = match store_preferences.pack_to_one {
@@ -29,11 +32,11 @@ pub fn generate(
         false => new_line,
     };
 
-    let new_batch_option = if existing_invoice_row.status != InvoiceRowStatus::New {
+    let new_batch_option = if should_upsert_batch(&stock_in_type, &existing_invoice_row) {
         let new_batch = generate_batch(
             &existing_invoice_row.store_id,
             new_line.clone(),
-            false,
+            should_keep_existing_batch(&stock_in_type),
             &existing_invoice_row.name_link_id,
         );
         new_line.stock_line_id = Some(new_batch.id.clone());
@@ -69,6 +72,8 @@ fn generate_line(
         location,
         total_before_tax,
         note,
+        stock_line_id,
+        inventory_adjustment_reason_id,
         tax: _,
         r#type: _,
     }: InsertStockInLine,
@@ -95,13 +100,27 @@ fn generate_line(
         number_of_packs,
         item_name,
         item_code,
-        stock_line_id: None,
+        stock_line_id,
         total_before_tax,
         total_after_tax,
         tax,
         note,
-        inventory_adjustment_reason_id: None,
+        inventory_adjustment_reason_id,
         return_reason_id: None,
         foreign_currency_price_before_tax: None,
+    }
+}
+
+fn should_upsert_batch(stock_in_type: &StockInType, existing_invoice_row: &InvoiceRow) -> bool {
+    match stock_in_type {
+        StockInType::InboundReturn => existing_invoice_row.status != InvoiceRowStatus::New,
+        StockInType::InventoryAddition => true,
+    }
+}
+
+fn should_keep_existing_batch(stock_in_type: &StockInType) -> bool {
+    match stock_in_type {
+        StockInType::InboundReturn => false,
+        StockInType::InventoryAddition => true,
     }
 }

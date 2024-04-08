@@ -1,13 +1,16 @@
 use chrono::Utc;
 
-use repository::{InvoiceLineRow, InvoiceLineRowType, NameRowRepository, StockLine, StockLineRow};
 use repository::{
     InvoiceRow, InvoiceRowStatus, InvoiceRowType, NumberRowType, RepositoryError, StorageConnection,
 };
+use repository::{NameRowRepository, StockLine, StockLineRow};
 use util::constants::INVENTORY_ADJUSTMENT_NAME_CODE;
 use util::uuid::uuid;
 
+use crate::invoice_line::stock_in_line::{InsertStockInLine, StockInType};
+use crate::invoice_line::stock_out_line::{InsertStockOutLine, StockOutType};
 use crate::number::next_number;
+use crate::{i32_to_u32, NullableUpdate};
 
 use super::{AdjustmentType, InsertInventoryAdjustment};
 
@@ -22,7 +25,14 @@ pub fn generate(
         inventory_adjustment_reason_id,
     }: InsertInventoryAdjustment,
     stock_line: StockLine,
-) -> Result<(InvoiceRow, InvoiceLineRow, StockLineRow), RepositoryError> {
+) -> Result<
+    (
+        InvoiceRow,
+        Option<InsertStockInLine>,
+        Option<InsertStockOutLine>,
+    ),
+    RepositoryError,
+> {
     let current_datetime = Utc::now().naive_utc();
 
     let inventory_adjustment_name = NameRowRepository::new(connection)
@@ -77,44 +87,52 @@ pub fn generate(
         sell_price_per_pack,
         note,
         ..
-    } = stock_line.stock_line_row.clone();
+    } = stock_line.stock_line_row;
 
-    let invoice_line = InvoiceLineRow {
-        id: uuid(),
-        invoice_id: invoice.id.clone(),
-        item_link_id: stock_line.item_row.id,
-        item_name: stock_line.item_row.name,
-        item_code: stock_line.item_row.code,
-        stock_line_id: Some(stock_line_id),
-        location_id,
-        batch,
-        expiry_date,
-        pack_size,
-        cost_price_per_pack,
-        sell_price_per_pack,
-        total_before_tax: 0.0,
-        total_after_tax: 0.0,
-        tax: None,
-        r#type: match adjustment_type {
-            AdjustmentType::Addition => InvoiceLineRowType::StockIn,
-            AdjustmentType::Reduction => InvoiceLineRowType::StockOut,
-        },
-        number_of_packs: adjustment,
-        note,
-        inventory_adjustment_reason_id,
-        return_reason_id: None,
-        foreign_currency_price_before_tax: None,
-    };
+    let line_id = uuid();
 
-    let mut updated_stock_line = stock_line.stock_line_row;
+    let insert_stock_in_line: Option<InsertStockInLine>;
+    let insert_stock_out_line: Option<InsertStockOutLine>;
 
-    let delta = match adjustment_type {
-        AdjustmentType::Addition => adjustment,
-        AdjustmentType::Reduction => -adjustment,
-    };
+    match adjustment_type {
+        AdjustmentType::Addition => {
+            let line = InsertStockInLine {
+                id: line_id,
+                invoice_id: invoice.id.clone(),
+                item_id: stock_line.item_row.id,
+                location: location_id.map(|id| NullableUpdate { value: Some(id) }),
+                pack_size: i32_to_u32(pack_size),
+                batch,
+                note,
+                cost_price_per_pack,
+                sell_price_per_pack,
+                expiry_date,
+                number_of_packs: adjustment,
+                stock_line_id: Some(stock_line_id),
+                inventory_adjustment_reason_id,
+                r#type: StockInType::InventoryAddition,
+                total_before_tax: None,
+                tax: None,
+            };
+            insert_stock_in_line = Some(line);
+            insert_stock_out_line = None;
+        }
+        AdjustmentType::Reduction => {
+            let line = InsertStockOutLine {
+                id: line_id,
+                invoice_id: invoice.id.clone(),
+                stock_line_id,
+                inventory_adjustment_reason_id,
+                note,
+                number_of_packs: adjustment,
+                r#type: Some(StockOutType::InventoryReduction),
+                total_before_tax: None,
+                tax: None,
+            };
+            insert_stock_in_line = None;
+            insert_stock_out_line = Some(line);
+        }
+    }
 
-    updated_stock_line.available_number_of_packs += delta;
-    updated_stock_line.total_number_of_packs += delta;
-
-    Ok((invoice, invoice_line, updated_stock_line))
+    Ok((invoice, insert_stock_in_line, insert_stock_out_line))
 }

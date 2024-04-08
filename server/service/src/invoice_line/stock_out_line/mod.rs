@@ -17,6 +17,7 @@ pub enum StockOutType {
     OutboundShipment,
     OutboundReturn,
     Prescription,
+    InventoryReduction,
 }
 
 impl StockOutType {
@@ -25,6 +26,7 @@ impl StockOutType {
             StockOutType::OutboundShipment => InvoiceRowType::OutboundShipment,
             StockOutType::Prescription => InvoiceRowType::Prescription,
             StockOutType::OutboundReturn => InvoiceRowType::OutboundReturn,
+            StockOutType::InventoryReduction => InvoiceRowType::InventoryReduction,
         }
     }
 }

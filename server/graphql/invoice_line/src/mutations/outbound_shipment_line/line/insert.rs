@@ -103,6 +103,7 @@ impl InsertInput {
             total_before_tax,
             tax,
             note: None,
+            inventory_adjustment_reason_id: None,
         }
     }
 }
@@ -534,6 +535,7 @@ mod test {
                     r#type: Some(StockOutType::OutboundShipment),
                     tax: Some(5.0),
                     note: None,
+                    inventory_adjustment_reason_id: None,
                 }
             );
             Ok(InvoiceLine {

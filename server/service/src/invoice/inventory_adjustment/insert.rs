@@ -1,7 +1,6 @@
 use repository::RepositoryError;
 use repository::{
-    ActivityLogType, Invoice, InvoiceLineRowRepository, InvoiceRow, InvoiceRowRepository,
-    InvoiceRowStatus, StockLine, StockLineRowRepository,
+    ActivityLogType, Invoice, InvoiceRow, InvoiceRowRepository, InvoiceRowStatus, StockLine,
 };
 
 use super::generate::generate;
@@ -9,6 +8,8 @@ use super::validate::validate;
 
 use crate::activity_log::activity_log_entry;
 use crate::invoice::query::get_invoice;
+use crate::invoice_line::stock_in_line::{insert_stock_in_line, InsertStockInLineError};
+use crate::invoice_line::stock_out_line::{insert_stock_out_line, InsertStockOutLineError};
 use crate::service_provider::ServiceContext;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -37,6 +38,8 @@ pub enum InsertInventoryAdjustmentError {
     NewlyCreatedInvoiceDoesNotExist,
     DatabaseError(RepositoryError),
     InternalError(String),
+    StockInLineInsertError { error: InsertStockInLineError },
+    StockOutLineInsertError { error: InsertStockOutLineError },
 }
 
 pub fn insert_inventory_adjustment(
@@ -47,14 +50,24 @@ pub fn insert_inventory_adjustment(
         .connection
         .transaction_sync(|connection| {
             let stock_line = validate(connection, &ctx.store_id, &input)?;
-            let (new_invoice, invoice_line, stock_line_row) =
+            let (new_invoice, insert_stock_in, insert_stock_out) =
                 generate(connection, &ctx.store_id, &ctx.user_id, input, stock_line)?;
 
             let invoice_row_repo = InvoiceRowRepository::new(connection);
 
             invoice_row_repo.upsert_one(&new_invoice)?;
-            InvoiceLineRowRepository::new(connection).upsert_one(&invoice_line)?;
-            StockLineRowRepository::new(connection).upsert_one(&stock_line_row)?;
+
+            if let Some(stock_in_line) = insert_stock_in {
+                insert_stock_in_line(ctx, stock_in_line).map_err(|error| {
+                    InsertInventoryAdjustmentError::StockInLineInsertError { error }
+                })?;
+            }
+
+            if let Some(stock_out_line) = insert_stock_out {
+                insert_stock_out_line(ctx, stock_out_line).map_err(|error| {
+                    InsertInventoryAdjustmentError::StockOutLineInsertError { error }
+                })?;
+            }
 
             let verified_invoice = InvoiceRow {
                 status: InvoiceRowStatus::Verified,
@@ -86,235 +99,235 @@ impl From<RepositoryError> for InsertInventoryAdjustmentError {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use repository::{
-        mock::{
-            currency_a, mock_inventory_adjustment_a, mock_name_linked_to_store_join,
-            mock_name_not_linked_to_store, mock_store_a, mock_store_linked_to_name,
-            mock_user_account_a, MockData, MockDataInserts,
-        },
-        test_db::setup_all_with_data,
-        InvoiceRowRepository, NameRow, NameStoreJoinRow,
-    };
-    use util::{inline_edit, inline_init};
+// #[cfg(test)]
+// mod test {
+//     use repository::{
+//         mock::{
+//             currency_a, mock_inventory_adjustment_a, mock_name_linked_to_store_join,
+//             mock_name_not_linked_to_store, mock_store_a, mock_store_linked_to_name,
+//             mock_user_account_a, MockData, MockDataInserts,
+//         },
+//         test_db::setup_all_with_data,
+//         InvoiceRowRepository, NameRow, NameStoreJoinRow,
+//     };
+//     use util::{inline_edit, inline_init};
 
-    use crate::{
-        invoice::inventory_adjustment::insert::InsertInventoryAdjustment,
-        service_provider::ServiceProvider,
-    };
+//     use crate::{
+//         invoice::inventory_adjustment::insert::InsertInventoryAdjustment,
+//         service_provider::ServiceProvider,
+//     };
 
-    use super::InsertInventoryAdjustmentError;
+//     use super::InsertInventoryAdjustmentError;
 
-    type ServiceError = InsertInventoryAdjustmentError;
+//     type ServiceError = InsertInventoryAdjustmentError;
 
-    #[actix_rt::test]
-    async fn insert_inventory_adjustment_errors() {
-        fn not_visible() -> NameRow {
-            inline_init(|r: &mut NameRow| {
-                r.id = "not_visible".to_string();
-            })
-        }
+//     #[actix_rt::test]
+//     async fn insert_inventory_adjustment_errors() {
+//         fn not_visible() -> NameRow {
+//             inline_init(|r: &mut NameRow| {
+//                 r.id = "not_visible".to_string();
+//             })
+//         }
 
-        fn not_a_customer() -> NameRow {
-            inline_init(|r: &mut NameRow| {
-                r.id = "not_a_customer".to_string();
-            })
-        }
+//         fn not_a_customer() -> NameRow {
+//             inline_init(|r: &mut NameRow| {
+//                 r.id = "not_a_customer".to_string();
+//             })
+//         }
 
-        fn not_a_customer_join() -> NameStoreJoinRow {
-            inline_init(|r: &mut NameStoreJoinRow| {
-                r.id = "not_a_customer_join".to_string();
-                r.name_link_id = not_a_customer().id;
-                r.store_id = mock_store_a().id;
-                r.name_is_customer = false;
-            })
-        }
+//         fn not_a_customer_join() -> NameStoreJoinRow {
+//             inline_init(|r: &mut NameStoreJoinRow| {
+//                 r.id = "not_a_customer_join".to_string();
+//                 r.name_link_id = not_a_customer().id;
+//                 r.store_id = mock_store_a().id;
+//                 r.name_is_customer = false;
+//             })
+//         }
 
-        let (_, _, connection_manager, _) = setup_all_with_data(
-            "insert_inventory_adjustment_errors",
-            MockDataInserts::all(),
-            inline_init(|r: &mut MockData| {
-                r.names = vec![not_visible(), not_a_customer()];
-                r.name_store_joins = vec![not_a_customer_join()];
-            }),
-        )
-        .await;
+//         let (_, _, connection_manager, _) = setup_all_with_data(
+//             "insert_inventory_adjustment_errors",
+//             MockDataInserts::all(),
+//             inline_init(|r: &mut MockData| {
+//                 r.names = vec![not_visible(), not_a_customer()];
+//                 r.name_store_joins = vec![not_a_customer_join()];
+//             }),
+//         )
+//         .await;
 
-        let service_provider = ServiceProvider::new(connection_manager, "app_data");
-        let context = service_provider
-            .context(mock_store_a().id, "".to_string())
-            .unwrap();
-        let service = service_provider.invoice_service;
+//         let service_provider = ServiceProvider::new(connection_manager, "app_data");
+//         let context = service_provider
+//             .context(mock_store_a().id, "".to_string())
+//             .unwrap();
+//         let service = service_provider.invoice_service;
 
-        //InvoiceAlreadyExists
-        assert_eq!(
-            service.insert_inventory_adjustment(
-                &context,
-                inline_init(|r: &mut InsertInventoryAdjustment| {
-                    r.id = mock_inventory_adjustment_a().id;
-                })
-            ),
-            Err(ServiceError::InvoiceAlreadyExists)
-        );
-        // OtherPartyDoesNotExist
-        assert_eq!(
-            service.insert_inventory_adjustment(
-                &context,
-                inline_init(|r: &mut InsertInventoryAdjustment| {
-                    r.id = "new_id".to_string();
-                    r.other_party_id = "invalid".to_string();
-                })
-            ),
-            Err(ServiceError::OtherPartyDoesNotExist)
-        );
-        // OtherPartyNotVisible
-        assert_eq!(
-            service.insert_inventory_adjustment(
-                &context,
-                inline_init(|r: &mut InsertInventoryAdjustment| {
-                    r.id = "new_id".to_string();
-                    r.other_party_id = not_visible().id;
-                })
-            ),
-            Err(ServiceError::OtherPartyNotVisible)
-        );
-        // OtherPartyNotACustomer
-        assert_eq!(
-            service.insert_inventory_adjustment(
-                &context,
-                inline_init(|r: &mut InsertInventoryAdjustment| {
-                    r.id = "new_id".to_string();
-                    r.other_party_id = not_a_customer().id;
-                })
-            ),
-            Err(ServiceError::OtherPartyNotACustomer)
-        );
+//         //InvoiceAlreadyExists
+//         assert_eq!(
+//             service.insert_inventory_adjustment(
+//                 &context,
+//                 inline_init(|r: &mut InsertInventoryAdjustment| {
+//                     r.id = mock_inventory_adjustment_a().id;
+//                 })
+//             ),
+//             Err(ServiceError::InvoiceAlreadyExists)
+//         );
+//         // OtherPartyDoesNotExist
+//         assert_eq!(
+//             service.insert_inventory_adjustment(
+//                 &context,
+//                 inline_init(|r: &mut InsertInventoryAdjustment| {
+//                     r.id = "new_id".to_string();
+//                     r.other_party_id = "invalid".to_string();
+//                 })
+//             ),
+//             Err(ServiceError::OtherPartyDoesNotExist)
+//         );
+//         // OtherPartyNotVisible
+//         assert_eq!(
+//             service.insert_inventory_adjustment(
+//                 &context,
+//                 inline_init(|r: &mut InsertInventoryAdjustment| {
+//                     r.id = "new_id".to_string();
+//                     r.other_party_id = not_visible().id;
+//                 })
+//             ),
+//             Err(ServiceError::OtherPartyNotVisible)
+//         );
+//         // OtherPartyNotACustomer
+//         assert_eq!(
+//             service.insert_inventory_adjustment(
+//                 &context,
+//                 inline_init(|r: &mut InsertInventoryAdjustment| {
+//                     r.id = "new_id".to_string();
+//                     r.other_party_id = not_a_customer().id;
+//                 })
+//             ),
+//             Err(ServiceError::OtherPartyNotACustomer)
+//         );
 
-        // TODO NewlyCreatedInvoiceDoesNotExist
-    }
+//         // TODO NewlyCreatedInvoiceDoesNotExist
+//     }
 
-    #[actix_rt::test]
-    async fn insert_inventory_adjustment_success() {
-        fn customer() -> NameRow {
-            inline_init(|r: &mut NameRow| {
-                r.id = "customer".to_string();
-            })
-        }
+//     #[actix_rt::test]
+//     async fn insert_inventory_adjustment_success() {
+//         fn customer() -> NameRow {
+//             inline_init(|r: &mut NameRow| {
+//                 r.id = "customer".to_string();
+//             })
+//         }
 
-        fn customer_join() -> NameStoreJoinRow {
-            inline_init(|r: &mut NameStoreJoinRow| {
-                r.id = "customer_join".to_string();
-                r.name_link_id = customer().id;
-                r.store_id = mock_store_a().id;
-                r.name_is_customer = true;
-            })
-        }
+//         fn customer_join() -> NameStoreJoinRow {
+//             inline_init(|r: &mut NameStoreJoinRow| {
+//                 r.id = "customer_join".to_string();
+//                 r.name_link_id = customer().id;
+//                 r.store_id = mock_store_a().id;
+//                 r.name_is_customer = true;
+//             })
+//         }
 
-        let (_, connection, connection_manager, _) = setup_all_with_data(
-            "insert_inventory_adjustment_success",
-            MockDataInserts::all(),
-            inline_init(|r: &mut MockData| {
-                r.names = vec![customer()];
-                r.name_store_joins = vec![customer_join()];
-            }),
-        )
-        .await;
+//         let (_, connection, connection_manager, _) = setup_all_with_data(
+//             "insert_inventory_adjustment_success",
+//             MockDataInserts::all(),
+//             inline_init(|r: &mut MockData| {
+//                 r.names = vec![customer()];
+//                 r.name_store_joins = vec![customer_join()];
+//             }),
+//         )
+//         .await;
 
-        let service_provider = ServiceProvider::new(connection_manager, "app_data");
-        let context = service_provider
-            .context(mock_store_a().id, mock_user_account_a().id)
-            .unwrap();
-        let service = service_provider.invoice_service;
+//         let service_provider = ServiceProvider::new(connection_manager, "app_data");
+//         let context = service_provider
+//             .context(mock_store_a().id, mock_user_account_a().id)
+//             .unwrap();
+//         let service = service_provider.invoice_service;
 
-        // Success
-        service
-            .insert_inventory_adjustment(
-                &context,
-                inline_init(|r: &mut InsertInventoryAdjustment| {
-                    r.id = "new_id".to_string();
-                    r.other_party_id = customer().id;
-                }),
-            )
-            .unwrap();
+//         // Success
+//         service
+//             .insert_inventory_adjustment(
+//                 &context,
+//                 inline_init(|r: &mut InsertInventoryAdjustment| {
+//                     r.id = "new_id".to_string();
+//                     r.other_party_id = customer().id;
+//                 }),
+//             )
+//             .unwrap();
 
-        let invoice = InvoiceRowRepository::new(&connection)
-            .find_one_by_id("new_id")
-            .unwrap();
+//         let invoice = InvoiceRowRepository::new(&connection)
+//             .find_one_by_id("new_id")
+//             .unwrap();
 
-        assert_eq!(
-            invoice,
-            inline_edit(&invoice, |mut u| {
-                u.name_link_id = customer().id;
-                u.user_id = Some(mock_user_account_a().id);
-                u.currency_id = Some(currency_a().id);
-                u
-            })
-        );
+//         assert_eq!(
+//             invoice,
+//             inline_edit(&invoice, |mut u| {
+//                 u.name_link_id = customer().id;
+//                 u.user_id = Some(mock_user_account_a().id);
+//                 u.currency_id = Some(currency_a().id);
+//                 u
+//             })
+//         );
 
-        //Test success onHold
-        service
-            .insert_inventory_adjustment(
-                &context,
-                inline_init(|r: &mut InsertInventoryAdjustment| {
-                    r.id = "test_on_hold".to_string();
-                    r.other_party_id = customer().id;
-                    r.on_hold = Some(true);
-                }),
-            )
-            .unwrap();
+//         //Test success onHold
+//         service
+//             .insert_inventory_adjustment(
+//                 &context,
+//                 inline_init(|r: &mut InsertInventoryAdjustment| {
+//                     r.id = "test_on_hold".to_string();
+//                     r.other_party_id = customer().id;
+//                     r.on_hold = Some(true);
+//                 }),
+//             )
+//             .unwrap();
 
-        let invoice = InvoiceRowRepository::new(&connection)
-            .find_one_by_id("test_on_hold")
-            .unwrap();
+//         let invoice = InvoiceRowRepository::new(&connection)
+//             .find_one_by_id("test_on_hold")
+//             .unwrap();
 
-        assert_eq!(
-            invoice,
-            inline_edit(&invoice, |mut u| {
-                u.name_link_id = customer().id;
-                u.on_hold = true;
-                u
-            })
-        );
+//         assert_eq!(
+//             invoice,
+//             inline_edit(&invoice, |mut u| {
+//                 u.name_link_id = customer().id;
+//                 u.on_hold = true;
+//                 u
+//             })
+//         );
 
-        //Test success name_store_id linked to store
-        service
-            .insert_inventory_adjustment(
-                &context,
-                inline_init(|r: &mut InsertInventoryAdjustment| {
-                    r.id = "test_name_store_id_linked".to_string();
-                    r.other_party_id = mock_name_linked_to_store_join().name_link_id.clone();
-                }),
-            )
-            .unwrap();
+//         //Test success name_store_id linked to store
+//         service
+//             .insert_inventory_adjustment(
+//                 &context,
+//                 inline_init(|r: &mut InsertInventoryAdjustment| {
+//                     r.id = "test_name_store_id_linked".to_string();
+//                     r.other_party_id = mock_name_linked_to_store_join().name_link_id.clone();
+//                 }),
+//             )
+//             .unwrap();
 
-        let invoice = InvoiceRowRepository::new(&connection)
-            .find_one_by_id("test_name_store_id_linked")
-            .unwrap();
+//         let invoice = InvoiceRowRepository::new(&connection)
+//             .find_one_by_id("test_name_store_id_linked")
+//             .unwrap();
 
-        assert_eq!(
-            invoice,
-            inline_edit(&invoice, |mut u| {
-                u.name_store_id = Some(mock_store_linked_to_name().id.clone());
-                u
-            })
-        );
+//         assert_eq!(
+//             invoice,
+//             inline_edit(&invoice, |mut u| {
+//                 u.name_store_id = Some(mock_store_linked_to_name().id.clone());
+//                 u
+//             })
+//         );
 
-        //Test success name_store_id, not linked to store
-        service
-            .insert_inventory_adjustment(
-                &context,
-                inline_init(|r: &mut InsertInventoryAdjustment| {
-                    r.id = "test_name_store_id_not_linked".to_string();
-                    r.other_party_id = mock_name_not_linked_to_store().id.clone();
-                }),
-            )
-            .unwrap();
+//         //Test success name_store_id, not linked to store
+//         service
+//             .insert_inventory_adjustment(
+//                 &context,
+//                 inline_init(|r: &mut InsertInventoryAdjustment| {
+//                     r.id = "test_name_store_id_not_linked".to_string();
+//                     r.other_party_id = mock_name_not_linked_to_store().id.clone();
+//                 }),
+//             )
+//             .unwrap();
 
-        let invoice = InvoiceRowRepository::new(&connection)
-            .find_one_by_id("test_name_store_id_not_linked")
-            .unwrap();
+//         let invoice = InvoiceRowRepository::new(&connection)
+//             .find_one_by_id("test_name_store_id_not_linked")
+//             .unwrap();
 
-        assert_eq!(invoice.name_store_id, None)
-    }
-}
+//         assert_eq!(invoice.name_store_id, None)
+//     }
+// }

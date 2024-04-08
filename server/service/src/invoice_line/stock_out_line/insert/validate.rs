@@ -29,6 +29,7 @@ pub fn validate(
     let invoice =
         check_invoice_exists(&input.invoice_id, connection)?.ok_or(InvoiceDoesNotExist)?;
 
+    // TODO
     if invoice.status != InvoiceRowStatus::New
         && !check_number_of_packs(Some(input.number_of_packs))
     {

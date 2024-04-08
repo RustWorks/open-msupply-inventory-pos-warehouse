@@ -61,6 +61,8 @@ pub fn generate(
                 expiry_date,
                 r#type: StockInType::InboundReturn,
                 // Default
+                inventory_adjustment_reason_id: None,
+                stock_line_id: None,
                 location: None,
                 cost_price_per_pack: 0.0,
                 sell_price_per_pack: 0.0,

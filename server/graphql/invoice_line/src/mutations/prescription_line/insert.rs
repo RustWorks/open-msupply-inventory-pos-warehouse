@@ -163,6 +163,7 @@ impl InsertInput {
             number_of_packs,
             total_before_tax: None,
             tax: None,
+            inventory_adjustment_reason_id: None,
             note,
         }
     }
@@ -529,6 +530,7 @@ mod test {
                     stock_line_id: "stock line input".to_string(),
                     number_of_packs: 1.0,
                     total_before_tax: None,
+                    inventory_adjustment_reason_id: None,
                     note: None,
                     tax: None,
                 }

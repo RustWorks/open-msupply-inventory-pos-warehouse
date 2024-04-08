@@ -3,7 +3,10 @@ use repository::{
     StockLine, StockLineRow, StorageConnection,
 };
 
-use crate::invoice::common::{calculate_foreign_currency_total, calculate_total_after_tax};
+use crate::{
+    invoice::common::{calculate_foreign_currency_total, calculate_total_after_tax},
+    invoice_line::StockOutType,
+};
 
 use super::{InsertStockOutLine, InsertStockOutLineError};
 
@@ -14,7 +17,7 @@ pub fn generate(
     batch: StockLine,
     invoice: InvoiceRow,
 ) -> Result<(InvoiceLineRow, StockLineRow), InsertStockOutLineError> {
-    let adjust_total_number_of_packs = invoice.status == InvoiceRowStatus::Picked;
+    let adjust_total_number_of_packs = should_adjust_total_num_packs(&input.r#type, &invoice);
 
     let update_batch = generate_batch_update(
         &input,
@@ -54,6 +57,7 @@ fn generate_line(
         total_before_tax,
         tax: _,
         note,
+        inventory_adjustment_reason_id,
     }: InsertStockOutLine,
     ItemRow {
         id: item_id,
@@ -110,8 +114,26 @@ fn generate_line(
         total_after_tax,
         tax,
         note,
-        inventory_adjustment_reason_id: None,
+        inventory_adjustment_reason_id,
         return_reason_id: None,
         foreign_currency_price_before_tax,
     })
+}
+
+fn should_adjust_total_num_packs(
+    stock_out_type: &Option<StockOutType>,
+    invoice: &InvoiceRow,
+) -> bool {
+    if let Some(stock_out_type) = stock_out_type {
+        match stock_out_type {
+            StockOutType::InventoryReduction => true,
+            StockOutType::OutboundReturn
+            | StockOutType::OutboundShipment
+            | StockOutType::Prescription => invoice.status == InvoiceRowStatus::Picked,
+        }
+    } else {
+        // should never happen, but if it does, stick with usual behaviour
+        // why is stock_out_type an Option?
+        invoice.status == InvoiceRowStatus::Picked
+    }
 }

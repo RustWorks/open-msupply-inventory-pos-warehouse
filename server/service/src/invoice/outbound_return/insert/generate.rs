@@ -83,6 +83,7 @@ pub fn generate(
             r#type: Some(StockOutType::OutboundReturn),
             tax: None,
             total_before_tax: None,
+            inventory_adjustment_reason_id: None,
         })
         .collect();
 

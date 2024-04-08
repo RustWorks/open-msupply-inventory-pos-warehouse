@@ -158,6 +158,7 @@ fn generate_new_line(
         total_before_tax: None,
         tax: None,
         note: None,
+        inventory_adjustment_reason_id: None,
     }
 }
 
