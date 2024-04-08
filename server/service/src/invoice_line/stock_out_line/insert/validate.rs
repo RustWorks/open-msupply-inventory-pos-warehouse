@@ -5,7 +5,7 @@ use crate::{
     invoice_line::{
         check_batch_exists, check_batch_on_hold, check_existing_stock_line, check_location_on_hold,
         validate::{check_line_does_not_exist, check_number_of_packs},
-        LocationIsOnHoldError,
+        LocationIsOnHoldError, StockOutType,
     },
 };
 
@@ -29,9 +29,12 @@ pub fn validate(
     let invoice =
         check_invoice_exists(&input.invoice_id, connection)?.ok_or(InvoiceDoesNotExist)?;
 
-    // TODO
     if invoice.status != InvoiceRowStatus::New
-        && !check_number_of_packs(Some(input.number_of_packs))
+        || input
+            .r#type
+            .as_ref()
+            .is_some_and(|t| t == &StockOutType::InventoryReduction) // always check number of packs for inventory reduction
+            && !check_number_of_packs(Some(input.number_of_packs))
     {
         return Err(NumberOfPacksBelowOne);
     }
