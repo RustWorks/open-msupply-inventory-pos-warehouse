@@ -14,5 +14,9 @@
 		"cleartext": true,
 		"androidScheme": "https"
 	},
-	"plugins": {}
+	"plugins": {
+		"NativeApi": {
+			"debugUrl": "http://192.168.178.146:3003"
+		}
+	}
 }

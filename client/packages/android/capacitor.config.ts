@@ -27,9 +27,9 @@ const config: CapacitorConfig = {
   },
   plugins: {
     // Below will turn on debug (uncomment and run `yarn apply-config`)
-    //   NativeApi: {
-    //     debugUrl: 'http://192.168.178.146:3003',
-    //   },
+    NativeApi: {
+      debugUrl: 'http://192.168.178.146:3003',
+    },
   },
 };
 
