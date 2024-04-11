@@ -113,6 +113,8 @@ fn map_error(error: ServiceError) -> Result<InsertErrorInterface> {
 
         ServiceError::NewlyCreatedInvoiceDoesNotExist
         | ServiceError::InternalError(_)
+        | ServiceError::StockOutLineInsertError { .. }
+        | ServiceError::StockInLineInsertError { .. }
         | ServiceError::DatabaseError(_) => InternalError(formatted_error),
     };
 
