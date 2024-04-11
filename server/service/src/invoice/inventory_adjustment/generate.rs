@@ -14,6 +14,11 @@ use crate::{i32_to_u32, NullableUpdate};
 
 use super::{AdjustmentType, InsertInventoryAdjustment};
 
+pub enum InsertStockInOrOutLine {
+    StockIn(InsertStockInLine),
+    StockOut(InsertStockOutLine),
+}
+
 pub fn generate(
     connection: &StorageConnection,
     store_id: &str,
@@ -25,14 +30,7 @@ pub fn generate(
         inventory_adjustment_reason_id,
     }: InsertInventoryAdjustment,
     stock_line: StockLine,
-) -> Result<
-    (
-        InvoiceRow,
-        Option<InsertStockInLine>,
-        Option<InsertStockOutLine>,
-    ),
-    RepositoryError,
-> {
+) -> Result<(InvoiceRow, InsertStockInOrOutLine), RepositoryError> {
     let current_datetime = Utc::now().naive_utc();
 
     let inventory_adjustment_name = NameRowRepository::new(connection)
@@ -94,10 +92,7 @@ pub fn generate(
 
     let line_id = uuid();
 
-    let insert_stock_in_line: Option<InsertStockInLine>;
-    let insert_stock_out_line: Option<InsertStockOutLine>;
-
-    match adjustment_type {
+    let insert_stock_in_or_stock_out_line = match adjustment_type {
         AdjustmentType::Addition => {
             let line = InsertStockInLine {
                 id: line_id,
@@ -117,8 +112,7 @@ pub fn generate(
                 total_before_tax: None,
                 tax: None,
             };
-            insert_stock_in_line = Some(line);
-            insert_stock_out_line = None;
+            InsertStockInOrOutLine::StockIn(line)
         }
         AdjustmentType::Reduction => {
             let line = InsertStockOutLine {
@@ -132,10 +126,9 @@ pub fn generate(
                 total_before_tax: None,
                 tax: None,
             };
-            insert_stock_in_line = None;
-            insert_stock_out_line = Some(line);
+            InsertStockInOrOutLine::StockOut(line)
         }
-    }
+    };
 
-    Ok((invoice, insert_stock_in_line, insert_stock_out_line))
+    Ok((invoice, insert_stock_in_or_stock_out_line))
 }

@@ -3,7 +3,7 @@ use repository::{
     ActivityLogType, Invoice, InvoiceRow, InvoiceRowRepository, InvoiceRowStatus, StockLine,
 };
 
-use super::generate::generate;
+use super::generate::{generate, InsertStockInOrOutLine};
 use super::validate::validate;
 
 use crate::activity_log::activity_log_entry;
@@ -44,8 +44,8 @@ pub enum InsertInventoryAdjustmentError {
     NewlyCreatedInvoiceDoesNotExist,
     DatabaseError(RepositoryError),
     InternalError(String),
-    StockInLineInsertError { error: InsertStockInLineError },
-    StockOutLineInsertError { error: InsertStockOutLineError },
+    StockInLineInsertError(InsertStockInLineError),
+    StockOutLineInsertError(InsertStockOutLineError),
 }
 
 pub fn insert_inventory_adjustment(
@@ -56,24 +56,23 @@ pub fn insert_inventory_adjustment(
         .connection
         .transaction_sync(|connection| {
             let stock_line = validate(connection, &ctx.store_id, &input)?;
-            let (new_invoice, insert_stock_in, insert_stock_out) =
+            let (new_invoice, stock_in_or_stock_out_insert) =
                 generate(connection, &ctx.store_id, &ctx.user_id, input, stock_line)?;
 
             let invoice_row_repo = InvoiceRowRepository::new(connection);
 
             invoice_row_repo.upsert_one(&new_invoice)?;
 
-            if let Some(stock_in_line) = insert_stock_in {
-                insert_stock_in_line(ctx, stock_in_line).map_err(|error| {
-                    InsertInventoryAdjustmentError::StockInLineInsertError { error }
-                })?;
-            }
-
-            if let Some(stock_out_line) = insert_stock_out {
-                insert_stock_out_line(ctx, stock_out_line).map_err(|error| {
-                    InsertInventoryAdjustmentError::StockOutLineInsertError { error }
-                })?;
-            }
+            match stock_in_or_stock_out_insert {
+                InsertStockInOrOutLine::StockIn(line) => {
+                    insert_stock_in_line(ctx, line)
+                        .map_err(InsertInventoryAdjustmentError::StockInLineInsertError)?;
+                }
+                InsertStockInOrOutLine::StockOut(line) => {
+                    insert_stock_out_line(ctx, line)
+                        .map_err(InsertInventoryAdjustmentError::StockOutLineInsertError)?;
+                }
+            };
 
             let verified_invoice = InvoiceRow {
                 status: InvoiceRowStatus::Verified,
@@ -262,8 +261,11 @@ mod test {
 
     #[actix_rt::test]
     async fn insert_inventory_adjustment_success() {
-        let (_, connection, connection_manager, _) =
-            setup_all("insert_inventory_adjustment_success", MockDataInserts::all()).await;
+        let (_, connection, connection_manager, _) = setup_all(
+            "insert_inventory_adjustment_success",
+            MockDataInserts::all(),
+        )
+        .await;
 
         let service_provider = ServiceProvider::new(connection_manager, "app_data");
         let context = service_provider
