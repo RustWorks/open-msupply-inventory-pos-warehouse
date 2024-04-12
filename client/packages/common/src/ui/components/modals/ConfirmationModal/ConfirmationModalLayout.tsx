@@ -10,7 +10,7 @@ interface ConfirmationModalLayoutProps extends PropsWithChildren {
   isOpen: boolean;
   title: string;
   message: string;
-  buttons?: ReactNode;
+  buttons?: ReactNode[];
 }
 
 export const ConfirmationModalLayout = ({
@@ -47,7 +47,7 @@ export const ConfirmationModalLayout = ({
           display="flex"
           marginTop={2}
         >
-          {buttons}
+          {buttons && buttons.map(button => <Grid item>{button}</Grid>)}
         </Grid>
       </Grid>
     </BasicModal>

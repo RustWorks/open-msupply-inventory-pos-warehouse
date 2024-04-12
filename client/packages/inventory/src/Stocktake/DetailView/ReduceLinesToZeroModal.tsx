@@ -3,7 +3,6 @@ import {
   useTranslation,
   InputWithLabelRow,
   ConfirmationModalLayout,
-  Grid,
   DialogButton,
 } from '@openmsupply-client/common';
 import {
@@ -38,23 +37,17 @@ export const ReduceLinesToZeroConfirmationModal = ({
       isOpen={isOpen}
       title={t('heading.are-you-sure')}
       message={t('messages.confirm-reduce-lines-to-zero')}
-      buttons={
-        <>
-          <Grid item>
-            <DialogButton variant="cancel" onClick={onCancel} />
-          </Grid>
-          <Grid item>
-            <DialogButton
-              variant="ok"
-              disabled={reasonIsRequired && !reason}
-              onClick={async () => {
-                await onZeroQuantities(reason);
-                onCancel();
-              }}
-            />
-          </Grid>
-        </>
-      }
+      buttons={[
+        <DialogButton variant="cancel" onClick={onCancel} />,
+        <DialogButton
+          variant="ok"
+          disabled={reasonIsRequired && !reason}
+          onClick={async () => {
+            await onZeroQuantities(reason);
+            onCancel();
+          }}
+        />,
+      ]}
     >
       {reasonIsRequired && (
         <InputWithLabelRow

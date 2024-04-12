@@ -3,7 +3,6 @@ import {
   InputWithLabelRow,
   useTranslation,
   ConfirmationModalLayout,
-  Grid,
   DialogButton,
 } from '@openmsupply-client/common';
 import {
@@ -32,22 +31,16 @@ export const ChangeLocationConfirmationModal = ({
       isOpen={isOpen}
       title={t('heading.are-you-sure')}
       message={t('messages.confirm-change-location')}
-      buttons={
-        <>
-          <Grid item>
-            <DialogButton variant="cancel" onClick={onCancel} />
-          </Grid>
-          <Grid item>
-            <DialogButton
-              variant="ok"
-              onClick={async () => {
-                await onChangeLocation(location);
-                onCancel();
-              }}
-            />
-          </Grid>
-        </>
-      }
+      buttons={[
+        <DialogButton variant="cancel" onClick={onCancel} />,
+        <DialogButton
+          variant="ok"
+          onClick={async () => {
+            await onChangeLocation(location);
+            onCancel();
+          }}
+        />,
+      ]}
     >
       <InputWithLabelRow
         label={t('label.location')}
