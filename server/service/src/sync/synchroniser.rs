@@ -185,6 +185,7 @@ impl Synchroniser {
                 log::info!("{}", format_error(&error));
                 let _ = logger.error(&error.into());
             };
+            // Wait here ?
         }
         logger.done_step(SyncStep::PushCentralV6)?;
 
@@ -267,6 +268,9 @@ pub async fn integrate_and_translate_sync_buffer<'a>(
     connection: &StorageConnection,
     is_initialised: bool,
     logger: &mut SyncLogger<'a>,
+    // maybe we can add site_id here ?
+
+    // Sync logger ?
 ) -> anyhow::Result<(
     TranslationAndIntegrationResults,
     TranslationAndIntegrationResults,
@@ -296,6 +300,7 @@ pub async fn integrate_and_translate_sync_buffer<'a>(
         let translation_and_integration = TranslationAndIntegration::new(connection, &sync_buffer);
         // Translate and integrate upserts (ordered by referential database constraints)
         let upsert_sync_buffer_records =
+        // Filter by site id, and if no site id is passed filter by site id is null ?
             sync_buffer.get_ordered_sync_buffer_records(SyncBufferAction::Upsert, &table_order)?;
         // Translate and integrate delete (ordered by referential database constraints, in reverse)
         let delete_sync_buffer_records =

@@ -36,6 +36,9 @@ pub async fn pull(
         .await
         .map_err(Error::from)?;
 
+    // Check lock here ?
+    // Add new error variant
+
     let ctx = service_provider.basic_context()?;
     let changelog_repo = ChangelogRepository::new(&ctx.connection);
 
@@ -81,7 +84,7 @@ pub async fn pull(
         records,
     })
 }
-
+pub(super) static CACHED_SYNC_LOG: RwLock<Option<SyncLogRow>> = RwLock::new(None);
 /// Receive Records from a remote open-mSupply Server
 pub async fn push(
     service_provider: &ServiceProvider,
@@ -92,6 +95,7 @@ pub async fn push(
 ) -> Result<SyncPushSuccessV6, SyncParsedErrorV6> {
     use SyncParsedErrorV6 as Error;
 
+    // Stop sync if site in being integrated ?
     if !is_central_server() {
         return Err(Error::NotACentralServer);
     }
@@ -102,6 +106,7 @@ pub async fn push(
         .await
         .map_err(Error::from)?;
 
+    // Check lock here ?
     log::info!(
         "Receiving {}/{} records from site {}",
         batch.records.len(),
@@ -129,6 +134,11 @@ pub async fn push(
     // TODO we need to trigger integrate records for just 1 site?
     // See issue: https://github.com/msupply-foundation/open-msupply/issues/3294
     if total_records <= records_in_this_batch {
+        // Not good, need to just integrated the site records
+
+        // lock here
+        // integrated
+        // unlock
         service_provider.sync_trigger.trigger();
     }
 

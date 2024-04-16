@@ -103,6 +103,7 @@ impl SyncApiV6 {
             sync_v5_settings,
         })
     }
+    // A new explicit poll for status (other option was to wait at 'pull')
 
     pub async fn pull(
         &self,
