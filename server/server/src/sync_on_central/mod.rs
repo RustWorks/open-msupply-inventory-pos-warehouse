@@ -14,9 +14,9 @@ use service::{
     settings::Settings,
     sync::{
         api_v6::{
-            SiteStatusRequestV6, SiteStatusResponseV6, SyncDownloadFileRequestV6, SyncParsedErrorV6, SyncPullRequestV6, SyncPullResponseV6,
-            SyncPushRequestV6, SyncPushResponseV6, SyncUploadFileRequestV6,
-            SyncUploadFileResponseV6,
+            SiteStatusRequestV6, SiteStatusResponseV6, SyncDownloadFileRequestV6,
+            SyncParsedErrorV6, SyncPullRequestV6, SyncPullResponseV6, SyncPushRequestV6,
+            SyncPushResponseV6, SyncUploadFileRequestV6, SyncUploadFileResponseV6,
         },
         sync_on_central,
     },
@@ -62,11 +62,15 @@ async fn push(
 }
 
 #[post("/sync/site_status")]
-async fn site_status(request: Json<SiteStatusRequestV6>) -> actix_web::Result<impl Responder> {
-    let response = match sync_on_central::get_site_status(request.into_inner()).await {
-        Ok(result) => SiteStatusResponseV6::Data(result),
-        Err(error) => SiteStatusResponseV6::Error(error),
-    };
+async fn site_status(
+    request: Json<SiteStatusRequestV6>,
+    service_provider: Data<ServiceProvider>,
+) -> actix_web::Result<impl Responder> {
+    let response =
+        match sync_on_central::get_site_status(&&service_provider, request.into_inner()).await {
+            Ok(result) => SiteStatusResponseV6::Data(result),
+            Err(error) => SiteStatusResponseV6::Error(error),
+        };
 
     Ok(web::Json(response))
 }

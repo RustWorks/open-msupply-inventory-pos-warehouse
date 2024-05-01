@@ -23,14 +23,15 @@ pub(crate) mod translations;
 
 use std::sync::RwLock;
 
+use crate::service_provider::ServiceProvider;
 use log::info;
 use repository::{
     ChangelogFilter, EqualFilter, KeyValueStoreRepository, RepositoryError, StorageConnection,
     Store, StoreFilter, StoreRepository,
 };
-use crate::service_provider::ServiceProvider;
 
 use thiserror::Error;
+use util::{central_server_url, is_central_server};
 
 use self::api::SiteInfoV5;
 
@@ -148,8 +149,28 @@ impl CentralServerConfig {
 
         *CENTRAL_SERVER_CONFIG.write().unwrap() = new_config;
     }
-}
 
+    fn set_central_server_config_v6() {
+        let new_config: Self = match is_central_server() {
+            true => Self::IsCentralServer,
+            false => Self::CentralServerUrl(central_server_url()),
+        };
+        // Need to drop read before write
+        {
+            let current_config = CENTRAL_SERVER_CONFIG.read().unwrap();
+
+            if new_config == *current_config {
+                return;
+            }
+
+            if !current_config.inner_is_central_server() && new_config.inner_is_central_server() {
+                info!("Running as central");
+            }
+        }
+
+        *CENTRAL_SERVER_CONFIG.write().unwrap() = new_config;
+    }
+}
 
 pub(crate) fn is_initialised(service_provider: &ServiceProvider) -> bool {
     let ctx = service_provider.basic_context().unwrap();

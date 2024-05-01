@@ -4,11 +4,11 @@ use crate::StorageConnection;
 
 mod site;
 
-pub(crate) struct V2_00_00RND;
+pub(crate) struct V2_01_00;
 
-impl Migration for V2_00_00RND {
+impl Migration for V2_01_00 {
     fn version(&self) -> Version {
-        Version::from_str("2.0.0-rnd")
+        Version::from_str("2.1.0")
     }
 
     fn migrate(&self, connection: &StorageConnection) -> anyhow::Result<()> {
@@ -19,11 +19,11 @@ impl Migration for V2_00_00RND {
 
 #[cfg(test)]
 #[actix_rt::test]
-async fn migration_2_00_00_rnd() {
+async fn migration_2_01_00() {
     use crate::migrations::*;
     use crate::test_db::*;
 
-    let version = V2_00_00RND.version();
+    let version = V2_01_00.version();
 
     // This test allows checking sql syntax
     let SetupResult { connection, .. } = setup_test(SetupOption {

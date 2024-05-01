@@ -5,13 +5,13 @@ use std::{
 
 use actix_multipart::form::tempfile::TempFile;
 use repository::{
-    ChangelogRepository, SyncBufferRowRepository, SyncFileReferenceRow,
+    ChangelogRepository, Site, SiteRepository, SyncBufferRowRepository, SyncFileReferenceRow,
     SyncFileReferenceRowRepository,
 };
 use util::format_error;
 
 use crate::{
-    service_provider::ServiceProvider,
+    service_provider::{ServiceContext, ServiceProvider},
     settings::Settings,
     static_files::{StaticFile, StaticFileCategory, StaticFileService},
     sync::{
@@ -21,6 +21,7 @@ use crate::{
 };
 
 use super::{
+    api::SyncApiSettings,
     api_v6::{
         SiteStatusRequestV6, SyncBatchV6, SyncDownloadFileRequestV6, SyncParsedErrorV6,
         SyncPullRequestV6, SyncPushRequestV6, SyncPushSuccessV6, SyncRecordV6,
@@ -44,31 +45,27 @@ pub async fn pull(
     if !CentralServerConfig::is_central_server() {
         return Err(Error::NotACentralServer);
     }
-    // Check credentials again mSupply central server
-    let response = SyncApiV5::new(sync_v5_settings)
-        .map_err(|e| Error::OtherServerError(format_error(&e)))?
-        .get_site_info()
-        .await
-        .map_err(Error::from)?;
+
+    let ctx = service_provider.basic_context()?;
+    let site = get_site_info(&ctx, sync_v5_settings)?;
 
     // Site should retry if we are currently integrating records for this site
-    if is_integrating(response.site_id) {
+    if is_integrating(site.site_id) {
         return Err(Error::IntegrationInProgress);
     }
 
-    let ctx = service_provider.basic_context()?;
     let changelog_repo = ChangelogRepository::new(&ctx.connection);
 
     // We don't need a filter here, as we are filtering in the repository layer
     let changelogs = changelog_repo.outgoing_sync_records_from_central(
         cursor,
         batch_size,
-        response.site_id,
+        site.site_id,
         is_initialised,
     )?;
     let total_records = changelog_repo.count_outgoing_sync_records_from_central(
         cursor,
-        response.site_id,
+        site.site_id,
         is_initialised,
     )?;
     let max_cursor = changelog_repo.latest_cursor()?;
@@ -88,11 +85,7 @@ pub async fn pull(
     .map(SyncRecordV6::from)
     .collect();
 
-    log::info!(
-        "Sending {} records to site {}",
-        records.len(),
-        response.site_id
-    );
+    log::info!("Sending {} records to site {}", records.len(), site.site_id);
     log::debug!("Sending records as central server: {:#?}", records);
 
     let is_last_batch = total_records <= batch_size as u64;
@@ -118,15 +111,12 @@ pub async fn push(
     if !CentralServerConfig::is_central_server() {
         return Err(Error::NotACentralServer);
     }
-    // Check credentials again mSupply central server
-    let response = SyncApiV5::new(sync_v5_settings)
-        .map_err(|e| Error::OtherServerError(format_error(&e)))?
-        .get_site_info()
-        .await
-        .map_err(Error::from)?;
+
+    let ctx = service_provider.basic_context()?;
+    let site = get_site_info(&ctx, sync_v5_settings)?;
 
     // Site should retry if we are currently integrating records for this site
-    if is_integrating(response.site_id) {
+    if is_integrating(site.site_id) {
         return Err(Error::IntegrationInProgress);
     }
 
@@ -134,7 +124,7 @@ pub async fn push(
         "Receiving {}/{} records from site {}",
         batch.records.len(),
         batch.total_records,
-        response.site_id
+        site.site_id
     );
     log::debug!("Receiving records as central server: {:#?}", batch);
 
@@ -144,18 +134,17 @@ pub async fn push(
         ..
     } = batch;
 
-    let ctx = service_provider.basic_context()?;
     let repo = SyncBufferRowRepository::new(&ctx.connection);
 
     let records_in_this_batch = records.len() as u64;
     for SyncRecordV6 { record, .. } in records {
-        let buffer_row = record.to_buffer_row(Some(response.site_id))?;
+        let buffer_row = record.to_buffer_row(Some(site.site_id))?;
 
         repo.upsert_one(&buffer_row)?;
     }
 
     if is_last_batch {
-        spawn_integration(service_provider, response.site_id);
+        spawn_integration(service_provider, site.site_id);
     }
 
     Ok(SyncPushSuccessV6 {
@@ -164,6 +153,7 @@ pub async fn push(
 }
 
 pub async fn get_site_status(
+    service_provider: &ServiceProvider,
     SiteStatusRequestV6 { sync_v5_settings }: SiteStatusRequestV6,
 ) -> Result<SiteStatusV6, SyncParsedErrorV6> {
     use SyncParsedErrorV6 as Error;
@@ -172,13 +162,10 @@ pub async fn get_site_status(
         return Err(Error::NotACentralServer);
     }
 
-    let response = SyncApiV5::new(sync_v5_settings)
-        .map_err(|e| Error::OtherServerError(format_error(&e)))?
-        .get_site_info()
-        .await
-        .map_err(Error::from)?;
+    let ctx = service_provider.basic_context()?;
+    let site = get_site_info(&ctx, sync_v5_settings)?;
 
-    let is_integrating = is_integrating(response.site_id);
+    let is_integrating = is_integrating(site.site_id);
 
     Ok(SiteStatusV6 { is_integrating })
 }
@@ -230,12 +217,8 @@ pub async fn download_file(
     if !CentralServerConfig::is_central_server() {
         return Err(Error::NotACentralServer);
     }
-    // Check credentials again mSupply central server
-    let _ = SyncApiV5::new(sync_v5_settings)
-        .map_err(|e| Error::OtherServerError(format_error(&e)))?
-        .get_site_info()
-        .await
-        .map_err(Error::from)?;
+    // Check credentials
+    // let _ = get_site_info(&ctx, sync_v5_settings)?;
 
     let service = StaticFileService::new(&settings.server.base_dir)?;
     let static_file_category = StaticFileCategory::SyncFile(table_name, record_id);
@@ -268,12 +251,8 @@ pub async fn upload_file(
     if !CentralServerConfig::is_central_server() {
         return Err(Error::NotACentralServer);
     }
-    // Check credentials again mSupply central server
-    let _ = SyncApiV5::new(sync_v5_settings)
-        .map_err(|e| Error::OtherServerError(format_error(&e)))?
-        .get_site_info()
-        .await
-        .map_err(Error::from)?;
+    // Check credentials
+    // let _ = get_site_info(&ctx, sync_v5_settings)?;
 
     let file_service = StaticFileService::new(&settings.server.base_dir)?;
     let ctx = service_provider.basic_context()?;
@@ -316,5 +295,19 @@ fn set_integrating(site_id: i32, is_integrating: bool) {
         sites_being_integrated.push(site_id);
     } else {
         sites_being_integrated.retain(|id| *id != site_id);
+    }
+}
+
+fn get_site_info(
+    ctx: &ServiceContext,
+    sync_v5_settings: SyncApiSettings,
+) -> Result<Site, SyncParsedErrorV6> {
+    // todo check creds lol
+    let site_repo = SiteRepository::new(&ctx.connection);
+    match site_repo.find_one_by_id(&sync_v5_settings.site_uuid)? {
+        Some(site) => Ok(site),
+        None => Err(SyncParsedErrorV6::OtherServerError(
+            "site not found".to_string(),
+        )),
     }
 }

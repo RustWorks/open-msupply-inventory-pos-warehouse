@@ -5,6 +5,7 @@ pub mod timezone;
 pub mod uuid;
 
 mod logger;
+use std::env;
 
 pub use logger::*;
 
@@ -27,3 +28,14 @@ pub use error::*;
 
 mod file;
 pub use file::*;
+
+pub fn is_central_server() -> bool {
+    env::var("IS_CENTRAL_SERVER")
+        .map(|is_central_server| is_central_server.to_lowercase() == "true")
+        .unwrap_or(false)
+}
+
+// tODO:?
+pub fn central_server_url() -> String {
+    env::var("CENTRAL_SERVER_URL").unwrap_or("".to_string())
+}
