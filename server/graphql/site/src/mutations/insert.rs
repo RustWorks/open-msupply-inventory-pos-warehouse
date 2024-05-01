@@ -4,13 +4,14 @@ use graphql_core::{
     ContextExt,
 };
 use repository::{RepositoryError, Site, SiteRepository};
-use service::auth::{Resource, ResourceAccessRequest};
 
 #[derive(InputObject)]
 #[graphql(name = "InsertSiteInput")]
 pub struct InsertSiteInput {
     pub id: String,
     pub site_id: i32,
+    pub hardware_id: String,
+    pub site_name: String,
 }
 
 #[derive(Union)]
@@ -19,11 +20,7 @@ pub enum InsertResponse {
     Response(SiteNode),
 }
 
-pub fn insert_site(
-    ctx: &Context<'_>,
-    store_id: String,
-    input: InsertSiteInput,
-) -> Result<InsertResponse> {
+pub fn insert_site(ctx: &Context<'_>, input: InsertSiteInput) -> Result<InsertResponse> {
     // validate_auth(
     //     ctx,
     //     &ResourceAccessRequest {
@@ -40,6 +37,8 @@ pub fn insert_site(
     let res = site_repo.upsert_one(&Site {
         id: input.id,
         site_id: input.site_id,
+        hardware_id: input.hardware_id,
+        site_name: input.site_name,
     });
 
     map_response(res)
@@ -75,6 +74,8 @@ fn map_response(from: Result<(), RepositoryError>) -> Result<InsertResponse> {
         Ok(()) => InsertResponse::Response(SiteNode::from_domain(Site {
             id: "".to_string(),
             site_id: 0,
+            hardware_id: "".to_string(),
+            site_name: "".to_string(),
         })),
         // todo map error
         Err(error) => Err(StandardGraphqlError::InternalError(format!("{:?}", error)).extend())?,

@@ -302,10 +302,17 @@ fn get_site_info(
     ctx: &ServiceContext,
     sync_v5_settings: SyncApiSettings,
 ) -> Result<Site, SyncParsedErrorV6> {
-    // todo check creds lol
     let site_repo = SiteRepository::new(&ctx.connection);
-    match site_repo.find_one_by_id(&sync_v5_settings.site_uuid)? {
-        Some(site) => Ok(site),
+
+    let sites_for_hardware_id = site_repo.find_by_hardware_id(&sync_v5_settings.site_uuid)?;
+
+    // todo check creds lol
+    let site = sites_for_hardware_id
+        .iter()
+        .find(|site| site.site_name == sync_v5_settings.username);
+
+    match site {
+        Some(site) => Ok(site.to_owned()),
         None => Err(SyncParsedErrorV6::OtherServerError(
             "site not found".to_string(),
         )),

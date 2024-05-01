@@ -6,6 +6,8 @@ table! {
     site (id) {
         id -> Text,
         site_id -> Integer,
+        hardware_id -> Text,
+        site_name -> Text,
     }
 }
 
@@ -16,6 +18,8 @@ table! {
 pub struct Site {
     pub id: String,
     pub site_id: i32,
+    pub hardware_id: String,
+    pub site_name: String,
 }
 
 pub struct SiteRepository<'a> {
@@ -62,6 +66,12 @@ impl<'a> SiteRepository<'a> {
     pub fn find_many_by_id(&self, ids: &[String]) -> Result<Vec<Site>, RepositoryError> {
         Ok(site_dsl::site
             .filter(site_dsl::id.eq_any(ids))
+            .load(&self.connection.connection)?)
+    }
+
+    pub fn find_by_hardware_id(&self, hardware_id: &str) -> Result<Vec<Site>, RepositoryError> {
+        Ok(site_dsl::site
+            .filter(site_dsl::hardware_id.eq(hardware_id))
             .load(&self.connection.connection)?)
     }
 

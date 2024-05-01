@@ -48,9 +48,8 @@ impl SiteMutations {
     async fn insert_site(
         &self,
         ctx: &Context<'_>,
-        store_id: String,
         input: InsertSiteInput,
     ) -> Result<InsertResponse> {
-        insert_site(ctx, store_id, input)
+        insert_site(ctx, input)
     }
 }
