@@ -142,8 +142,8 @@ export const PrescriptionLineEditForm: React.FC<
     updateIssueQuantity(allocatedQuantity);
   };
 
-  const handleIssueQuantityChange = (quantity?: number) => {
-    if (quantity === undefined) return;
+  const handleIssueQuantityChange = (inputQuantity?: number) => {
+    const quantity = inputQuantity === undefined ? 0 : inputQuantity;
     setIssueQuantity(quantity);
     allocate(quantity, Number(packSizeController.selected?.value));
   };
@@ -237,7 +237,7 @@ export const PrescriptionLineEditForm: React.FC<
               autoFocus
               value={issueQuantity}
               onChange={handleIssueQuantityChange}
-              min={1}
+              min={0}
             />
 
             <Box marginLeft={1} />
