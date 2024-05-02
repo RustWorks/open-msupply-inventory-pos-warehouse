@@ -21,9 +21,14 @@ use graphql_general::{
     InitialisationQueries,
 };
 
-use graphql_asset::{AssetLogMutations, AssetLogQueries, AssetMutations, AssetQueries};
+use graphql_asset::{
+    AssetLogMutations, AssetLogQueries, AssetLogReasonMutations, AssetLogReasonQueries,
+    AssetMutations, AssetQueries,
+};
+use graphql_asset_catalogue::AssetCatalogueMutations;
 use graphql_asset_catalogue::AssetCatalogueQueries;
 use graphql_cold_chain::{ColdChainMutations, ColdChainQueries};
+use graphql_inventory_adjustment::InventoryAdjustmentMutations;
 use graphql_invoice::{InvoiceMutations, InvoiceQueries};
 use graphql_invoice_line::{InvoiceLineMutations, InvoiceLineQueries};
 use graphql_location::{LocationMutations, LocationQueries};
@@ -43,8 +48,8 @@ use service::auth_data::AuthData;
 use service::plugin::validation::ValidatedPluginBucket;
 use service::service_provider::ServiceProvider;
 use service::settings::Settings;
+use service::sync::CentralServerConfig;
 use tokio::sync::RwLock;
-use util::is_central_server;
 
 pub type OperationalSchema =
     async_graphql::Schema<Queries, Mutations, async_graphql::EmptySubscription>;
@@ -60,6 +65,12 @@ impl CentralServerMutationNode {
     async fn pack_variant(&self) -> PackVariantMutations {
         PackVariantMutations
     }
+    async fn asset_catalogue(&self) -> AssetCatalogueMutations {
+        AssetCatalogueMutations
+    }
+    async fn log_reason(&self) -> AssetLogReasonMutations {
+        AssetLogReasonMutations
+    }
 }
 
 #[derive(Default, Clone)]
@@ -67,7 +78,7 @@ pub struct CentralServerMutations;
 #[Object]
 impl CentralServerMutations {
     async fn central_server(&self) -> async_graphql::Result<CentralServerMutationNode> {
-        if !is_central_server() {
+        if !CentralServerConfig::is_central_server() {
             return Err(StandardGraphqlError::from_str("Not a central server"));
         };
 
@@ -96,6 +107,7 @@ pub struct Queries(
     pub AssetCatalogueQueries,
     pub AssetQueries,
     pub AssetLogQueries,
+    pub AssetLogReasonQueries,
 );
 
 impl Queries {
@@ -120,6 +132,7 @@ impl Queries {
             AssetCatalogueQueries,
             AssetQueries,
             AssetLogQueries,
+            AssetLogReasonQueries,
         )
     }
 }
@@ -144,6 +157,7 @@ pub struct Mutations(
     pub CentralServerMutations,
     pub AssetMutations,
     pub AssetLogMutations,
+    pub InventoryAdjustmentMutations,
 );
 
 impl Mutations {
@@ -167,6 +181,7 @@ impl Mutations {
             CentralServerMutations,
             AssetMutations,
             AssetLogMutations,
+            InventoryAdjustmentMutations,
         )
     }
 }

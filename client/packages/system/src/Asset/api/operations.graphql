@@ -6,6 +6,7 @@ fragment AssetCatalogueItem on AssetCatalogueItemNode {
   id
   manufacturer
   model
+  subCatalogue
   assetClass {
     name
   }
@@ -15,6 +16,36 @@ fragment AssetCatalogueItem on AssetCatalogueItemNode {
   assetType {
     name
   }
+}
+
+fragment AssetProperty on AssetCataloguePropertyNode {
+  id
+  allowedValues
+  name
+  valueType
+}
+
+fragment AssetLog on AssetLogNode {
+  comment
+  id
+  logDatetime
+  reason {
+    reason
+  }
+  status
+  type
+  user {
+    firstName
+    lastName
+    username
+    jobTitle
+  }
+}
+
+fragment AssetLogReason on AssetLogReasonNode {
+  id
+  assetLogStatus
+  reason
 }
 
 query assetCatalogueItems(
@@ -30,7 +61,6 @@ query assetCatalogueItems(
     filter: $filter
   ) {
     ... on AssetCatalogueItemConnector {
-      __typename
       nodes {
         ...AssetCatalogueItem
       }
@@ -42,9 +72,7 @@ query assetCatalogueItems(
 query assetCatalogueItemById($assetCatalogueItemId: String!) {
   assetCatalogueItems(filter: { id: { equalTo: $assetCatalogueItemId } }) {
     ... on AssetCatalogueItemConnector {
-      __typename
       nodes {
-        __typename
         ...AssetCatalogueItem
       }
       totalCount
@@ -89,6 +117,152 @@ query assetCategories(
         classId
       }
       totalCount
+    }
+  }
+}
+
+query assetCatalogueProperties($filter: AssetCataloguePropertyFilterInput) {
+  assetCatalogueProperties(filter: $filter) {
+    ... on AssetCataloguePropertyConnector {
+      __typename
+      nodes {
+        __typename
+        ...AssetProperty
+      }
+    }
+    ... on NodeError {
+      __typename
+    }
+  }
+}
+
+query assetLogReasons(
+  $filter: AssetLogReasonFilterInput
+  $sort: AssetLogReasonSortInput
+  $storeId: String!
+) {
+  assetLogReasons(filter: $filter, sort: $sort, storeId: $storeId) {
+    ... on AssetLogReasonConnector {
+      __typename
+      totalCount
+      nodes {
+        __typename
+        ...AssetLogReason
+      }
+    }
+  }
+}
+
+mutation insertAssetCatalogueItem(
+  $input: InsertAssetCatalogueItemInput!
+  $storeId: String!
+) {
+  centralServer {
+    assetCatalogue {
+      insertAssetCatalogueItem(input: $input, storeId: $storeId) {
+        ... on AssetCatalogueItemNode {
+          id
+        }
+        ... on InsertAssetCatalogueItemError {
+          __typename
+          error {
+            ... on UniqueValueViolation {
+              __typename
+              field
+              description
+            }
+            ... on UniqueCombinationViolation {
+              __typename
+              fields
+              description
+            }
+            ... on RecordAlreadyExist {
+              __typename
+              description
+            }
+            description
+          }
+        }
+      }
+    }
+  }
+}
+
+mutation deleteAssetCatalogueItem($assetCatalogueItemId: String!) {
+  centralServer {
+    assetCatalogue {
+      deleteAssetCatalogueItem(assetCatalogueItemId: $assetCatalogueItemId) {
+        ... on DeleteResponse {
+          __typename
+          id
+        }
+        ... on DeleteAssetCatalogueItemError {
+          error {
+            description
+          }
+        }
+      }
+    }
+  }
+}
+
+mutation insertAssetCatalogueItemProperty(
+  $storeId: String!
+  $input: InsertAssetCatalogueItemPropertyInput!
+) {
+  centralServer {
+    assetCatalogue {
+      insertAssetCatalogueItemProperty(input: $input, storeId: $storeId) {
+        ... on AssetCatalogueItemPropertyNode {
+          __typename
+          id
+        }
+        ... on InsertAssetCatalogueItemPropertyError {
+          __typename
+          error {
+            description
+          }
+        }
+      }
+    }
+  }
+}
+
+mutation insertAssetLogReason($input: InsertAssetLogReasonInput!) {
+  centralServer {
+    logReason {
+      insertAssetLogReason(input: $input) {
+        ... on AssetLogReasonNode {
+          __typename
+          id
+          reason
+        }
+        ... on InsertAssetLogReasonError {
+          __typename
+          error {
+            description
+          }
+        }
+      }
+    }
+  }
+}
+
+mutation deleteLogReason($reasonId: String!) {
+  centralServer {
+    logReason {
+      deleteLogReason(reasonId: $reasonId) {
+        ... on DeleteResponse {
+          __typename
+          id
+        }
+        ... on DeleteAssetLogReasonError {
+          __typename
+          error {
+            description
+          }
+        }
+      }
     }
   }
 }

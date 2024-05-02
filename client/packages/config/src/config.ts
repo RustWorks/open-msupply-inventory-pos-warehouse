@@ -32,6 +32,17 @@ export const Environment = {
   UPLOAD_FRIDGE_TAG: `${apiHost}/fridge-tag`,
   PRINT_LABEL_QR: `${apiHost}/print/label-qr`,
   PRINT_LABEL_TEST: `${apiHost}/print/label-test`,
+
+  // -- Feature Flags --
+  // To add a new feature flag:
+  // - Add a new env var via webpack plugin in webpack.config.js
+  // - Declare a const for it above
+  // - Follow the pattern below to add to `Environment` (otherwise you'll get compilation errors with tests/storybook)
+
+  // FEATURE_INVENTORY_ADJUSTMENTS:
+  //   typeof FEATURE_INVENTORY_ADJUSTMENTS === 'undefined'
+  //     ? false
+  //     : FEATURE_INVENTORY_ADJUSTMENTS,
 };
 
 export default Environment;

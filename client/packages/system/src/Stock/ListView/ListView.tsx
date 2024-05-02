@@ -21,7 +21,7 @@ import {
 import { RepackModal, StockLineEditModal } from '../Components';
 import { StockLineRowFragment, useStock } from '../api';
 import { AppBarButtons } from './AppBarButtons';
-import { PackVariantCell } from '@openmsupply-client/system';
+import { getPackVariantCell } from '@openmsupply-client/system';
 import { Toolbar } from './Toolbar';
 import { useStockList } from '../apiNEW/hooks/useStockList';
 
@@ -130,7 +130,7 @@ const StockListComponent: FC = () => {
       key: 'packUnit',
       label: 'label.pack',
       sortable: false,
-      Cell: PackVariantCell({
+      Cell: getPackVariantCell({
         getItemId: r => r.itemId,
         getPackSizes: r => [r.packSize],
         getUnitName: r => r.item.unitName || null,
@@ -182,6 +182,10 @@ const StockListComponent: FC = () => {
 
   const repackModalController = useToggle();
 
+  const stockLine = entity
+    ? data?.nodes.find(({ id }) => id === entity.id)
+    : undefined;
+
   return (
     <>
       {repackModalController.isOn && (
@@ -191,11 +195,11 @@ const StockListComponent: FC = () => {
           stockLine={data?.nodes.find(({ id }) => id === repackId) ?? null}
         />
       )}
-      {isOpen && entity && (
+      {isOpen && stockLine && (
         <StockLineEditModal
           isOpen={isOpen}
           onClose={onClose}
-          stockLine={entity}
+          stockLine={stockLine}
         />
       )}
       <Toolbar filter={filter} />

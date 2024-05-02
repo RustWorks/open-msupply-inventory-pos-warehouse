@@ -19,7 +19,7 @@ import { StatusTab } from './StatusTab';
 import { UploadTab } from './UploadTab';
 import { useAssets } from '../api';
 import { Draft } from '../Components';
-import { Environment } from 'packages/config/src';
+import { Environment } from '@openmsupply-client/config/src';
 
 enum Tabs {
   Status = 'Status',
@@ -45,15 +45,16 @@ export const UpdateStatusButtonComponent = ({
   const { Modal, hideDialog, showDialog } = useDialog({ onClose });
   const { error, success } = useNotification();
   const [draft, setDraft] = useState<Partial<Draft>>(getEmptyAssetLog(''));
-  const { mutateAsync: insert } = useAssets.log.insert();
+  const { insertLog, invalidateQueries } = useAssets.log.insert();
 
   const onNext = useDebounceCallback(() => {
     onChangeTab(Tabs.Upload);
   }, []);
 
   const onOk = async () => {
-    await insert(draft)
-      .then(id => {
+    await insertLog(draft)
+      .then(({ id }) => {
+        invalidateQueries();
         if (!draft.files?.length)
           return new Promise(resolve => resolve('no files'));
 
@@ -68,6 +69,7 @@ export const UpdateStatusButtonComponent = ({
           headers: {
             Accept: 'application/json',
           },
+          credentials: 'include',
           body: formData,
         });
       })

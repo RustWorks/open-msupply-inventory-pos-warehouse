@@ -16,7 +16,7 @@ import {
 } from '@openmsupply-client/common';
 import {
   InventoryAdjustmentReasonRowFragment,
-  PackVariantCell,
+  getPackVariantCell,
 } from '@openmsupply-client/system';
 import { StocktakeSummaryItem } from '../../../types';
 import { StocktakeLineFragment } from '../../api';
@@ -83,12 +83,16 @@ export const useStocktakeColumns = ({
         'itemName',
         {
           Cell: TooltipTextCell,
-          getSortValue: row => {
-            return row.item?.name ?? '';
-          },
-          accessor: ({ rowData }) => {
-            return rowData.item?.name ?? '';
-          },
+          getSortValue: row =>
+            getColumnPropertyAsString(row, [
+              { path: ['lines', 'itemName'] },
+              { path: ['itemName'], default: '' },
+            ]),
+          accessor: ({ rowData }) =>
+            getColumnProperty(rowData, [
+              { path: ['lines', 'itemName'] },
+              { path: ['itemName'], default: '' },
+            ]),
         },
       ],
       [
@@ -119,7 +123,7 @@ export const useStocktakeColumns = ({
       {
         key: 'locationCode',
         label: 'label.location',
-        width: 90,
+        width: 100,
         accessor: ({ rowData }) =>
           getColumnProperty(rowData, [
             { path: ['lines', 'location', 'code'] },
@@ -130,7 +134,7 @@ export const useStocktakeColumns = ({
         key: 'packUnit',
         label: 'label.pack',
         sortable: false,
-        Cell: PackVariantCell({
+        Cell: getPackVariantCell({
           getItemId: row => row?.item?.id ?? '',
           getPackSizes: row => {
             if ('lines' in row) return row.lines.map(l => l.packSize ?? 1);
@@ -173,7 +177,7 @@ export const useStocktakeColumns = ({
         Cell: NumberCell,
         getIsError: row =>
           getLinesFromRow(row).some(
-            r => getError(r)?.__typename === 'SnapshotCountCurrentCountMismatch'
+            r => getError(r)?.__typename === 'StockLineReducedBelowZero'
           ),
         sortable: false,
         accessor: ({ rowData }) => {
@@ -254,7 +258,7 @@ export const useExpansionColumns = (): Column<StocktakeLineFragment>[] => {
       key: 'packUnit',
       label: 'label.pack',
       sortable: false,
-      Cell: PackVariantCell({
+      Cell: getPackVariantCell({
         getItemId: row => row?.itemId,
         getPackSizes: row => {
           return [row?.packSize ?? 1];

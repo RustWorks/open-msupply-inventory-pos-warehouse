@@ -4,6 +4,7 @@ import { Utils } from './utils';
 
 export const useAssets = {
   utils: {
+    api: Utils.useAssetApi,
     labelPrinterSettings: Utils.useLabelPrinterSettings,
   },
 
@@ -21,5 +22,8 @@ export const useAssets = {
     update: Document.useAssetUpdate,
   },
 
-  log: { insert: Log.useAssetLogInsert, list: Log.useAssetLogs },
+  log: {
+    insert: Log.useAssetLogInsert,
+    list: Log.useAssetLogs,
+  },
 };

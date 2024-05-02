@@ -9,6 +9,9 @@ import {
   LoadingButton,
   EnvUtils,
   Platform,
+  PlusCircleIcon,
+  ButtonWithIcon,
+  useEditModal,
 } from '@openmsupply-client/common';
 import { useStock } from '../api';
 import { stockLinesToCsv } from '../../utils';
@@ -22,6 +25,17 @@ export const AppBarButtonsComponent = () => {
   //   direction: 'asc',
   // });
   const { fetchAllStock, isLoading } = useExportStockList();
+import { NewStockLineModal } from '../Components/NewStockLineModal';
+
+export const AppBarButtonsComponent = () => {
+  const { success, error } = useNotification();
+  const t = useTranslation('inventory');
+  const { fetchAsync, isLoading } = useStock.line.listAll({
+    key: 'itemName',
+    direction: 'asc',
+  });
+
+  const { isOpen, onClose, onOpen } = useEditModal();
 
   const csvExport = async () => {
     const { data } = await fetchAllStock();
@@ -38,7 +52,14 @@ export const AppBarButtonsComponent = () => {
 
   return (
     <AppBarButtonsPortal>
+      {isOpen && <NewStockLineModal isOpen={isOpen} onClose={onClose} />}
+
       <Grid container gap={1}>
+        <ButtonWithIcon
+          Icon={<PlusCircleIcon />}
+          label={t('button.new-stock')}
+          onClick={onOpen}
+        />
         <LoadingButton
           startIcon={<DownloadIcon />}
           isLoading={isLoading}

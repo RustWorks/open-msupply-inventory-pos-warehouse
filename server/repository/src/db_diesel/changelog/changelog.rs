@@ -50,9 +50,10 @@ no_arg_sql_function!(
     "Represents the SQL last_insert_row() function"
 );
 
-#[derive(DbEnum, Debug, Clone, PartialEq, Eq)]
+#[derive(DbEnum, Debug, Clone, PartialEq, Eq, Default)]
 #[DbValueStyle = "SCREAMING_SNAKE_CASE"]
 pub enum ChangelogAction {
+    #[default]
     Upsert,
     Delete,
 }
@@ -86,12 +87,15 @@ pub enum ChangelogTableName {
     Currency,
     AssetClass,
     AssetCategory,
-    AssetType,
+    AssetCatalogueType,
     AssetCatalogueItem,
+    AssetCatalogueItemProperty,
+    AssetCatalogueProperty,
     #[default]
     SyncFileReference,
     Asset,
     AssetLog,
+    AssetLogReason,
 }
 
 pub(crate) enum ChangeLogSyncStyle {
@@ -133,16 +137,19 @@ impl ChangelogTableName {
             ChangelogTableName::PackVariant => ChangeLogSyncStyle::Central,
             ChangelogTableName::AssetClass => ChangeLogSyncStyle::Central,
             ChangelogTableName::AssetCategory => ChangeLogSyncStyle::Central,
-            ChangelogTableName::AssetType => ChangeLogSyncStyle::Central,
+            ChangelogTableName::AssetCatalogueType => ChangeLogSyncStyle::Central,
             ChangelogTableName::AssetCatalogueItem => ChangeLogSyncStyle::Central,
             ChangelogTableName::Asset => ChangeLogSyncStyle::Remote,
             ChangelogTableName::SyncFileReference => ChangeLogSyncStyle::File,
             ChangelogTableName::AssetLog => ChangeLogSyncStyle::Remote,
+            ChangelogTableName::AssetCatalogueItemProperty => ChangeLogSyncStyle::Central,
+            ChangelogTableName::AssetCatalogueProperty => ChangeLogSyncStyle::Central,
+            ChangelogTableName::AssetLogReason => ChangeLogSyncStyle::Central,
         }
     }
 }
 
-#[derive(Debug, PartialEq, Insertable)]
+#[derive(Debug, PartialEq, Insertable, Default)]
 #[table_name = "changelog"]
 pub struct ChangeLogInsertRow {
     pub table_name: ChangelogTableName,
@@ -420,7 +427,7 @@ fn create_filtered_outgoing_sync_query(
     if is_initialized {
         query = query.filter(
             changelog_deduped::source_site_id
-                .ne(Some(sync_site_id.clone()))
+                .ne(Some(sync_site_id))
                 .or(changelog_deduped::source_site_id.is_null()),
         )
     }
@@ -430,18 +437,12 @@ fn create_filtered_outgoing_sync_query(
     // Central Records
 
     let central_sync_table_names: Vec<ChangelogTableName> = ChangelogTableName::iter()
-        .filter(|table| match table.sync_style() {
-            ChangeLogSyncStyle::Central => true,
-            _ => false,
-        })
+        .filter(|table| matches!(table.sync_style(), ChangeLogSyncStyle::Central))
         .collect();
 
     // Remote Records
     let remote_sync_table_names: Vec<ChangelogTableName> = ChangelogTableName::iter()
-        .filter(|table| match table.sync_style() {
-            ChangeLogSyncStyle::Remote => true,
-            _ => false,
-        })
+        .filter(|table| matches!(table.sync_style(), ChangeLogSyncStyle::Remote))
         .collect();
 
     let active_stores_for_site = store::table

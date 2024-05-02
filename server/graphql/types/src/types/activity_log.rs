@@ -32,6 +32,7 @@ pub enum ActivityLogNodeType {
     InvoiceStatusShipped,
     InvoiceStatusDelivered,
     InvoiceStatusVerified,
+    InventoryAdjustment,
     StocktakeCreated,
     StocktakeDeleted,
     StocktakeStatusFinalised,
@@ -57,7 +58,11 @@ pub enum ActivityLogNodeType {
     AssetUpdated,
     AssetDeleted,
     AssetLogCreated,
+    AssetCatalogueItemCreated,
     QuantityForLineHasBeenSetToZero,
+    AssetCatalogueItemPropertyCreated,
+    AssetLogReasonCreated,
+    AssetLogReasonDeleted,
 }
 
 #[Object]
@@ -144,6 +149,7 @@ impl ActivityLogNodeType {
             from::InvoiceStatusShipped => to::InvoiceStatusShipped,
             from::InvoiceStatusDelivered => to::InvoiceStatusDelivered,
             from::InvoiceStatusVerified => to::InvoiceStatusVerified,
+            from::InventoryAdjustment => to::InventoryAdjustment,
             from::StocktakeCreated => to::StocktakeCreated,
             from::StocktakeDeleted => to::StocktakeDeleted,
             from::StocktakeStatusFinalised => to::StocktakeStatusFinalised,
@@ -170,7 +176,11 @@ impl ActivityLogNodeType {
             from::AssetUpdated => to::AssetUpdated,
             from::AssetDeleted => to::AssetDeleted,
             from::AssetLogCreated => to::AssetLogCreated,
+            from::AssetCatalogueItemCreated => to::AssetCatalogueItemCreated,
             from::QuantityForLineHasBeenSetToZero => to::QuantityForLineHasBeenSetToZero,
+            from::AssetCatalogueItemPropertyCreated => to::AssetCatalogueItemPropertyCreated,
+            from::AssetLogReasonCreated => to::AssetLogReasonCreated,
+            from::AssetLogReasonDeleted => to::AssetLogReasonDeleted,
         }
     }
 
@@ -187,6 +197,7 @@ impl ActivityLogNodeType {
             from::InvoiceStatusShipped => to::InvoiceStatusShipped,
             from::InvoiceStatusDelivered => to::InvoiceStatusDelivered,
             from::InvoiceStatusVerified => to::InvoiceStatusVerified,
+            from::InventoryAdjustment => to::InventoryAdjustment,
             from::StocktakeCreated => to::StocktakeCreated,
             from::StocktakeDeleted => to::StocktakeDeleted,
             from::StocktakeStatusFinalised => to::StocktakeStatusFinalised,
@@ -213,7 +224,11 @@ impl ActivityLogNodeType {
             from::AssetUpdated => to::AssetUpdated,
             from::AssetDeleted => to::AssetDeleted,
             from::AssetLogCreated => to::AssetLogCreated,
+            from::AssetCatalogueItemCreated => to::AssetCatalogueItemCreated,
             from::QuantityForLineHasBeenSetToZero => to::QuantityForLineHasBeenSetToZero,
+            from::AssetCatalogueItemPropertyCreated => to::AssetCatalogueItemPropertyCreated,
+            from::AssetLogReasonCreated => to::AssetLogReasonCreated,
+            from::AssetLogReasonDeleted => to::AssetLogReasonDeleted,
         }
     }
 }

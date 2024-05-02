@@ -37,6 +37,7 @@ pub enum ActivityLogType {
     InvoiceStatusShipped,
     InvoiceStatusDelivered,
     InvoiceStatusVerified,
+    InventoryAdjustment,
     StocktakeCreated,
     StocktakeDeleted,
     StocktakeStatusFinalised,
@@ -62,7 +63,11 @@ pub enum ActivityLogType {
     AssetUpdated,
     AssetDeleted,
     AssetLogCreated,
+    AssetLogReasonCreated,
+    AssetLogReasonDeleted,
     QuantityForLineHasBeenSetToZero,
+    AssetCatalogueItemCreated,
+    AssetCatalogueItemPropertyCreated,
 }
 
 #[derive(Clone, Queryable, Insertable, AsChangeset, Debug, PartialEq)]

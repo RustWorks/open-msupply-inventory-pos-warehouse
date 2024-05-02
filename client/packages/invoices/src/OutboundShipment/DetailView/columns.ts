@@ -13,7 +13,7 @@ import {
   NumberCell,
   CurrencyCell,
 } from '@openmsupply-client/common';
-import { PackVariantCell } from '@openmsupply-client/system';
+import { getPackVariantCell } from '@openmsupply-client/system';
 import { StockOutLineFragment } from '../../StockOut';
 import { StockOutItem } from '../../types';
 
@@ -88,13 +88,13 @@ export const useOutboundColumns = ({
           Cell: TooltipTextCell,
           getSortValue: row =>
             getColumnPropertyAsString(row, [
-              { path: ['lines', 'item', 'name'] },
-              { path: ['item', 'name'], default: '' },
+              { path: ['lines', 'itemName'] },
+              { path: ['itemName'], default: '' },
             ]),
           accessor: ({ rowData }) =>
             getColumnProperty(rowData, [
-              { path: ['lines', 'item', 'name'] },
-              { path: ['item', 'name'], default: '' },
+              { path: ['lines', 'itemName'] },
+              { path: ['itemName'], default: '' },
             ]),
         },
       ],
@@ -147,7 +147,7 @@ export const useOutboundColumns = ({
         key: 'packUnit',
         label: 'label.pack',
         sortable: false,
-        Cell: PackVariantCell({
+        Cell: getPackVariantCell({
           getItemId: row => {
             if ('lines' in row) return '';
             else return row?.item?.id;

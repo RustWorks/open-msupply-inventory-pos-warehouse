@@ -1,4 +1,3 @@
-use super::validate_request;
 use actix_web::{
     web::{self, Data},
     HttpRequest, HttpResponse,
@@ -10,6 +9,8 @@ use service::{
     service_provider::ServiceProvider,
     settings::LabelPrinterSettingNode,
 };
+
+use crate::authentication::validate_cookie_auth;
 
 #[derive(serde::Deserialize)]
 pub struct LabelData {
@@ -23,7 +24,7 @@ pub async fn print_label_qr(
     auth_data: Data<AuthData>,
     data: web::Json<LabelData>,
 ) -> HttpResponse {
-    let auth_result = validate_request(request.clone(), &auth_data);
+    let auth_result = validate_cookie_auth(request.clone(), &auth_data);
     match auth_result {
         Ok(_) => (),
         Err(error) => {
@@ -60,10 +61,8 @@ pub async fn test_printer(service_provider: Data<ServiceProvider>) -> HttpRespon
             serde_json::to_string(&HostResponse::parse(&status))
                 .unwrap_or("Failed to parse response".to_string()),
         ),
-        Err(error) => {
-            return HttpResponse::InternalServerError()
-                .body(format!("Error getting printer status: {}", error));
-        }
+        Err(error) => HttpResponse::InternalServerError()
+            .body(format!("Error getting printer status: {}", error)),
     }
 }
 
@@ -147,7 +146,7 @@ impl HostResponse {
             return invalid_response;
         }
         let line1_parts: Vec<&str> = lines[0].split(',').collect();
-        // not testing for endswith \x03 to allow for line split of \r\n on windows
+        // not testing for ends with \x03 to allow for line split of \r\n on windows
         if line1_parts.len() != 12 || !line1_parts[0].starts_with('\x02') {
             return invalid_response;
         }

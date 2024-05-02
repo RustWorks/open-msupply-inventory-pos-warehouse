@@ -146,6 +146,7 @@ module.exports = env => {
       new webpack.DefinePlugin({
         API_HOST: JSON.stringify(env.API_HOST),
         LOCAL_PLUGINS: JSON.stringify(localPlugins()),
+        LANG_VERSION: Date.now(),
       }),
       bundleAnalyzerPlugin,
       new HtmlWebpackPlugin({
@@ -156,6 +157,7 @@ module.exports = env => {
         patterns: [
           { from: './public/mockServiceWorker.js', to: 'mockServiceWorker.js' },
           { from: './public/medical-icons.css', to: 'medical-icons.css' },
+          { from: './public/game', to: 'game' },
           {
             context: path.resolve(
               __dirname,
