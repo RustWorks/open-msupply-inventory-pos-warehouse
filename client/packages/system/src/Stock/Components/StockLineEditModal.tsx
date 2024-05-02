@@ -90,7 +90,7 @@ export const StockLineEditModal: FC<StockLineEditModalProps> = ({
     },
     {
       Component: (
-        <InventoryAdjustmentForm stockLine={draft} onUpdate={onUpdate} />
+        <InventoryAdjustmentForm stockLine={draft} onUpdate={updateDraft} />
       ),
       value: 'label.adjust',
     },

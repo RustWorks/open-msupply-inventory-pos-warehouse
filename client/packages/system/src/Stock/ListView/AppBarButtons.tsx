@@ -16,24 +16,16 @@ import {
 import { useStock } from '../api';
 import { stockLinesToCsv } from '../../utils';
 import { useExportStockList } from '../apiNEW/hooks/useExportStockList';
-
-export const AppBarButtonsComponent = () => {
-  const { success, error } = useNotification();
-  const t = useTranslation('distribution');
-  // const { fetchAsync, isLoading } = useStock.line.listAll({
-  //   key: 'itemName',
-  //   direction: 'asc',
-  // });
-  const { fetchAllStock, isLoading } = useExportStockList();
 import { NewStockLineModal } from '../Components/NewStockLineModal';
 
 export const AppBarButtonsComponent = () => {
   const { success, error } = useNotification();
   const t = useTranslation('inventory');
-  const { fetchAsync, isLoading } = useStock.line.listAll({
-    key: 'itemName',
-    direction: 'asc',
-  });
+  // const { fetchAsync, isLoading } = useStock.line.listAll({
+  //   key: 'itemName',
+  //   direction: 'asc',
+  // });
+  const { fetchAllStock, isLoading } = useExportStockList();
 
   const { isOpen, onClose, onOpen } = useEditModal();
 
