@@ -4,8 +4,8 @@ import {
   InventoryAdjustmentReasonRowFragment,
   StockLineRowFragment,
 } from '../../..';
-import { STOCK_LINE } from './keys';
-import { useStockGraphQL } from '../useStockGraphQL';
+import { STOCK_LINE } from '../../api/hooks/keys';
+import { useStockGraphQL } from '../../api/useStockGraphQL';
 
 type DraftInventoryAdjustment = {
   reason: InventoryAdjustmentReasonRowFragment | null;

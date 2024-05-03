@@ -8,7 +8,8 @@ import {
   useNotification,
   AdjustmentTypeInput,
 } from '@openmsupply-client/common';
-import { StockLineRowFragment, useInventoryAdjustment } from '../../api';
+import { StockLineRowFragment } from '../../api';
+import { useInventoryAdjustment } from './useInventoryAdjustment';
 import { InventoryAdjustmentReasonSearchInput, usePackVariant } from '../../..';
 import { InventoryAdjustmentDirectionInput } from './InventoryAdjustmentDirectionSearchInput';
 import { INPUT_WIDTH, StyledInputRow } from '../StyledInputRow';
