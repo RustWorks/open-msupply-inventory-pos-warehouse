@@ -5,7 +5,7 @@ use std::{
 
 use actix_multipart::form::tempfile::TempFile;
 use repository::{
-    ChangelogRepository, Site, SiteRepository, SyncBufferRowRepository, SyncFileReferenceRow,
+    ChangelogRepository, SiteRow, SiteRowRepository, SyncBufferRowRepository, SyncFileReferenceRow,
     SyncFileReferenceRowRepository,
 };
 use util::format_error;
@@ -301,8 +301,8 @@ fn set_integrating(site_id: i32, is_integrating: bool) {
 fn get_site_info(
     ctx: &ServiceContext,
     sync_v5_settings: SyncApiSettings,
-) -> Result<Site, SyncParsedErrorV6> {
-    let site_repo = SiteRepository::new(&ctx.connection);
+) -> Result<SiteRow, SyncParsedErrorV6> {
+    let site_repo = SiteRowRepository::new(&ctx.connection);
 
     let sites_for_hardware_id = site_repo.find_many_by_hardware_id(&sync_v5_settings.site_uuid)?;
 

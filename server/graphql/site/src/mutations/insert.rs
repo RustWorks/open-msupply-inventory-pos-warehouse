@@ -3,7 +3,7 @@ use graphql_core::{
     standard_graphql_error::{validate_auth, StandardGraphqlError},
     ContextExt,
 };
-use repository::{RepositoryError, Site, SiteRepository};
+use repository::{RepositoryError, SiteRow, SiteRowRepository};
 
 #[derive(InputObject)]
 #[graphql(name = "InsertSiteInput")]
@@ -32,9 +32,9 @@ pub fn insert_site(ctx: &Context<'_>, input: InsertSiteInput) -> Result<InsertRe
     let service_provider = ctx.service_provider();
     let service_context = service_provider.basic_context()?;
 
-    let site_repo = SiteRepository::new(&service_context.connection);
+    let site_repo = SiteRowRepository::new(&service_context.connection);
 
-    let res = site_repo.upsert_one(&Site {
+    let res = site_repo.upsert_one(&SiteRow {
         id: input.id,
         site_id: input.site_id,
         hardware_id: input.hardware_id,
@@ -45,7 +45,7 @@ pub fn insert_site(ctx: &Context<'_>, input: InsertSiteInput) -> Result<InsertRe
 }
 
 pub struct SiteNode {
-    site: Site,
+    site: SiteRow,
 }
 
 #[Object]
@@ -60,18 +60,18 @@ impl SiteNode {
 }
 
 impl SiteNode {
-    pub fn from_domain(site: Site) -> SiteNode {
+    pub fn from_domain(site: SiteRow) -> SiteNode {
         SiteNode { site }
     }
 
-    pub fn from_vec(sites: Vec<Site>) -> Vec<SiteNode> {
+    pub fn from_vec(sites: Vec<SiteRow>) -> Vec<SiteNode> {
         sites.into_iter().map(SiteNode::from_domain).collect()
     }
 }
 
 fn map_response(from: Result<(), RepositoryError>) -> Result<InsertResponse> {
     let result = match from {
-        Ok(()) => InsertResponse::Response(SiteNode::from_domain(Site {
+        Ok(()) => InsertResponse::Response(SiteNode::from_domain(SiteRow {
             id: "".to_string(),
             site_id: 0,
             hardware_id: "".to_string(),

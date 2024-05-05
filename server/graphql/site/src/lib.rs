@@ -1,6 +1,6 @@
 use async_graphql::*;
 use graphql_core::{standard_graphql_error::validate_auth, ContextExt};
-use repository::SiteRepository;
+use repository::SiteRowRepository;
 use service::auth::{Resource, ResourceAccessRequest};
 
 mod mutations;
@@ -30,7 +30,7 @@ impl SiteQueries {
         let service_context = service_provider.context(store_id, "".to_string())?;
 
         // TODO: service layer!
-        let site_repo = SiteRepository::new(&service_context.connection);
+        let site_repo = SiteRowRepository::new(&service_context.connection);
 
         let sites = site_repo.get_all()?;
 

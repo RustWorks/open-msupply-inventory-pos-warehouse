@@ -35,7 +35,7 @@ pub fn is_central_server() -> bool {
         .unwrap_or(false)
 }
 
-// tODO:?
+// TODO:?
 pub fn central_server_url() -> String {
     env::var("CENTRAL_SERVER_URL").unwrap_or("".to_string())
 }
