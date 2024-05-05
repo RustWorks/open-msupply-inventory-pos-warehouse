@@ -2,6 +2,7 @@ use crate::{site::site::dsl as site_dsl, RepositoryError, StorageConnection};
 use diesel::prelude::*;
 use serde::Serialize;
 
+// TODO: add app/sync versions etc.
 table! {
     site (id) {
         id -> Text,
@@ -10,8 +11,6 @@ table! {
         site_name -> Text,
     }
 }
-
-// todo enum for int status
 
 #[derive(Clone, Queryable, Insertable, AsChangeset, Debug, PartialEq, Serialize)]
 #[table_name = "site"]
@@ -69,13 +68,16 @@ impl<'a> SiteRepository<'a> {
             .load(&self.connection.connection)?)
     }
 
-    pub fn find_by_hardware_id(&self, hardware_id: &str) -> Result<Vec<Site>, RepositoryError> {
+    pub fn find_many_by_hardware_id(
+        &self,
+        hardware_id: &str,
+    ) -> Result<Vec<Site>, RepositoryError> {
         Ok(site_dsl::site
             .filter(site_dsl::hardware_id.eq(hardware_id))
             .load(&self.connection.connection)?)
     }
 
-    // woah
+    // TODO: SiteRepo with query instead of this lol
     pub fn get_all(&self) -> Result<Vec<Site>, RepositoryError> {
         Ok(site_dsl::site
             // .filter(site_dsl::id.eq_any(ids))

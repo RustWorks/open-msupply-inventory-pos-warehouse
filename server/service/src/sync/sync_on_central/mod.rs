@@ -304,12 +304,13 @@ fn get_site_info(
 ) -> Result<Site, SyncParsedErrorV6> {
     let site_repo = SiteRepository::new(&ctx.connection);
 
-    let sites_for_hardware_id = site_repo.find_by_hardware_id(&sync_v5_settings.site_uuid)?;
+    let sites_for_hardware_id = site_repo.find_many_by_hardware_id(&sync_v5_settings.site_uuid)?;
 
-    // todo check creds lol
     let site = sites_for_hardware_id
         .iter()
         .find(|site| site.site_name == sync_v5_settings.username);
+
+    // TODO: check password!
 
     match site {
         Some(site) => Ok(site.to_owned()),
