@@ -146,6 +146,7 @@ impl<'a> NumberRowRepository<'a> {
         store_id: &str,
         next_number: Option<i64>,
     ) -> Result<NextNumber, RepositoryError> {
+        let mut guard = self.connection.lock();
         // 1. First we try to just grab the next number from the database, in most cases this should work and be the fast.
 
         let update_query = sql_query(r#"UPDATE number SET value = value+1 WHERE store_id = $1 AND type = $2 RETURNING value;"#)
@@ -159,7 +160,7 @@ impl<'a> NumberRowRepository<'a> {
         // );
         let update_result = update_query
             .clone()
-            .get_result::<NextNumber>(self.connection.lock().connection());
+            .get_result::<NextNumber>(guard.connection());
 
         match update_result {
             Ok(result) => Ok(result),
@@ -171,7 +172,6 @@ impl<'a> NumberRowRepository<'a> {
                     .bind::<Text, _>(store_id)
                     .bind::<Text, _>(r#type.to_string());
 
-                let mut guard = self.connection.lock();
                 match insert_query.get_result::<NextNumber>(guard.connection()) {
                     Ok(result) => Ok(result),
                     Err(NotFound) => {
