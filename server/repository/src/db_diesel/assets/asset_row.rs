@@ -1,4 +1,6 @@
-use super::asset_row::asset::dsl::*;
+use super::{
+    super::asset_internal_location_row::asset_internal_location, asset_row::asset::dsl::*,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -32,6 +34,8 @@ table! {
         deleted_datetime -> Nullable<Timestamp>,
     }
 }
+
+allow_tables_to_appear_in_same_query!(asset, asset_internal_location);
 
 #[derive(
     Clone, Insertable, Queryable, Debug, PartialEq, AsChangeset, Eq, Default, Serialize, Deserialize,

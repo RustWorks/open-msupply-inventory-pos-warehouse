@@ -22,7 +22,7 @@ pub struct TemperatureBreach {
     pub temperature_breach_row: TemperatureBreachRow,
 }
 
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct TemperatureBreachFilter {
     pub id: Option<EqualFilter<String>>,
     pub r#type: Option<EqualFilter<TemperatureBreachRowType>>,
@@ -154,7 +154,7 @@ fn to_domain(temperature_breach_row: TemperatureBreachRow) -> TemperatureBreach 
 impl TemperatureBreachFilter {
     pub fn new() -> TemperatureBreachFilter {
         Self::default()
-        }
+    }
 
     pub fn id(mut self, filter: EqualFilter<String>) -> Self {
         self.id = Some(filter);

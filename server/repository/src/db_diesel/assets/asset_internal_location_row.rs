@@ -1,5 +1,4 @@
-use super::asset_internal_location_row::asset_internal_location::dsl::*;
-
+use super::{asset_internal_location_row::asset_internal_location::dsl::*, asset_row::asset};
 use crate::RepositoryError;
 use crate::StorageConnection;
 use crate::Upsert;
@@ -13,6 +12,8 @@ table! {
         location_id -> Text,
     }
 }
+
+joinable!(asset_internal_location -> asset (asset_id));
 
 #[derive(Clone, Insertable, Queryable, Debug, PartialEq, AsChangeset, Eq)]
 #[table_name = "asset_internal_location"]

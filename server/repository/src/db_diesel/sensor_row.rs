@@ -1,6 +1,6 @@
 use super::{
-    location_row::location, sensor_row::sensor::dsl as sensor_dsl, store_row::store,
-    StorageConnection,
+    asset_internal_location_row::asset_internal_location, asset_row::asset, location_row::location,
+    sensor_row::sensor::dsl as sensor_dsl, store_row::store, StorageConnection,
 };
 
 use crate::{repository_error::RepositoryError, Upsert};
@@ -27,6 +27,9 @@ table! {
 
 joinable!(sensor -> store (store_id));
 joinable!(sensor -> location (location_id));
+joinable!(sensor -> asset_internal_location (location_id));
+allow_tables_to_appear_in_same_query!(sensor, asset_internal_location);
+allow_tables_to_appear_in_same_query!(sensor, asset);
 
 #[derive(DbEnum, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[DbValueStyle = "SCREAMING_SNAKE_CASE"]

@@ -1,10 +1,12 @@
 use super::{
+    asset_internal_location_row::asset_internal_location::dsl as asset_internal_location_dsl,
     sensor_row::{sensor, sensor::dsl as sensor_dsl},
     DBType, SensorRow, StorageConnection,
 };
 use diesel::prelude::*;
 
 use crate::{
+    asset::{AssetFilter, AssetRepository},
     diesel_macros::{apply_equal_filter, apply_sort_no_case, apply_string_filter},
     repository_error::RepositoryError,
     StringFilter,
@@ -17,13 +19,14 @@ pub struct Sensor {
     pub sensor_row: SensorRow,
 }
 
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct SensorFilter {
     pub id: Option<EqualFilter<String>>,
     pub name: Option<StringFilter>,
     pub serial: Option<EqualFilter<String>>,
     pub is_active: Option<bool>,
     pub store_id: Option<EqualFilter<String>>,
+    pub asset: Option<AssetFilter>,
 }
 
 #[derive(PartialEq, Debug)]
@@ -85,20 +88,28 @@ impl<'a> SensorRepository<'a> {
     }
 
     pub fn create_filtered_query(filter: Option<SensorFilter>) -> BoxedSensorQuery {
-        let mut query = sensor::table.into_boxed();
+        let mut query = sensor_dsl::sensor.into_boxed();
 
         if let Some(filter) = filter {
             apply_equal_filter!(query, filter.id, sensor_dsl::id);
             apply_string_filter!(query, filter.name, sensor_dsl::name);
             apply_equal_filter!(query, filter.serial, sensor_dsl::serial);
 
+            if let Some(asset_filter) = filter.asset {
+                let sub_query = AssetRepository::create_filtered_query(Some(asset_filter))
+                    .inner_join(asset_internal_location_dsl::asset_internal_location);
+
+                let sub_query =
+                    sub_query.select(asset_internal_location_dsl::location_id.nullable());
+
+                query = query.filter(sensor_dsl::location_id.eq_any(sub_query));
+            }
+
             if let Some(value) = filter.is_active {
                 query = query.filter(sensor_dsl::is_active.eq(value));
             }
-
             apply_equal_filter!(query, filter.store_id, sensor_dsl::store_id);
         }
-
         query
     }
 }

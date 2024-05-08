@@ -118,7 +118,7 @@ impl<'a> AssetRepository<'a> {
     }
 
     pub fn count(&self, filter: Option<AssetFilter>) -> Result<i64, RepositoryError> {
-        let query = create_filtered_query(filter);
+        let query = Self::create_filtered_query(filter);
 
         Ok(query.count().get_result(&self.connection.connection)?)
     }
@@ -137,7 +137,7 @@ impl<'a> AssetRepository<'a> {
         filter: Option<AssetFilter>,
         sort: Option<AssetSort>,
     ) -> Result<Vec<Asset>, RepositoryError> {
-        let mut query = create_filtered_query(filter);
+        let mut query = Self::create_filtered_query(filter);
 
         if let Some(sort) = sort {
             match sort.key {
@@ -175,6 +175,55 @@ impl<'a> AssetRepository<'a> {
 
         Ok(result.into_iter().map(to_domain).collect())
     }
+
+    pub fn create_filtered_query(filter: Option<AssetFilter>) -> BoxedAssetQuery {
+        let mut query = asset_dsl::asset.into_boxed();
+
+        if let Some(f) = filter {
+            let AssetFilter {
+                id,
+                notes,
+                asset_number,
+                serial_number,
+                class_id,
+                category_id,
+                type_id,
+                catalogue_item_id,
+                installation_date,
+                replacement_date,
+                is_non_catalogue,
+                store,
+            } = f;
+
+            apply_equal_filter!(query, id, asset_dsl::id);
+            apply_string_filter!(query, notes, asset_dsl::notes);
+            apply_string_filter!(query, asset_number, asset_dsl::asset_number);
+            apply_string_filter!(query, serial_number, asset_dsl::serial_number);
+
+            apply_equal_filter!(query, catalogue_item_id, asset_dsl::asset_catalogue_item_id);
+            apply_date_filter!(query, installation_date, asset_dsl::installation_date);
+            apply_date_filter!(query, replacement_date, asset_dsl::replacement_date);
+
+            apply_equal_filter!(query, category_id, asset_dsl::asset_category_id);
+            apply_equal_filter!(query, class_id, asset_dsl::asset_class_id);
+            apply_equal_filter!(query, type_id, asset_dsl::asset_catalogue_type_id);
+
+            if let Some(value) = is_non_catalogue {
+                apply_equal_filter!(
+                    query,
+                    Some(EqualFilter::is_null(value)),
+                    asset_dsl::asset_catalogue_item_id
+                );
+            }
+
+            if store.is_some() {
+                let mut sub_query = store_dsl::store.select(store_dsl::id).into_boxed();
+                apply_string_filter!(sub_query, store, store_dsl::code);
+                query = query.filter(asset_dsl::store_id.eq_any(sub_query.nullable()));
+            }
+        }
+        query.filter(asset_dsl::deleted_datetime.is_null()) // Don't include any deleted items
+    }
 }
 
 fn to_domain(asset_row: AssetRow) -> Asset {
@@ -182,55 +231,6 @@ fn to_domain(asset_row: AssetRow) -> Asset {
 }
 
 type BoxedAssetQuery = IntoBoxed<'static, asset::table, DBType>;
-
-fn create_filtered_query(filter: Option<AssetFilter>) -> BoxedAssetQuery {
-    let mut query = asset_dsl::asset.into_boxed();
-
-    if let Some(f) = filter {
-        let AssetFilter {
-            id,
-            notes,
-            asset_number,
-            serial_number,
-            class_id,
-            category_id,
-            type_id,
-            catalogue_item_id,
-            installation_date,
-            replacement_date,
-            is_non_catalogue,
-            store,
-        } = f;
-
-        apply_equal_filter!(query, id, asset_dsl::id);
-        apply_string_filter!(query, notes, asset_dsl::notes);
-        apply_string_filter!(query, asset_number, asset_dsl::asset_number);
-        apply_string_filter!(query, serial_number, asset_dsl::serial_number);
-
-        apply_equal_filter!(query, catalogue_item_id, asset_dsl::asset_catalogue_item_id);
-        apply_date_filter!(query, installation_date, asset_dsl::installation_date);
-        apply_date_filter!(query, replacement_date, asset_dsl::replacement_date);
-
-        apply_equal_filter!(query, category_id, asset_dsl::asset_category_id);
-        apply_equal_filter!(query, class_id, asset_dsl::asset_class_id);
-        apply_equal_filter!(query, type_id, asset_dsl::asset_catalogue_type_id);
-
-        if let Some(value) = is_non_catalogue {
-            apply_equal_filter!(
-                query,
-                Some(EqualFilter::is_null(value)),
-                asset_dsl::asset_catalogue_item_id
-            );
-        }
-
-        if store.is_some() {
-            let mut sub_query = store_dsl::store.select(store_dsl::id).into_boxed();
-            apply_string_filter!(sub_query, store, store_dsl::code);
-            query = query.filter(asset_dsl::store_id.eq_any(sub_query.nullable()));
-        }
-    }
-    query.filter(asset_dsl::deleted_datetime.is_null()) // Don't include any deleted items
-}
 
 #[cfg(test)]
 mod tests {
