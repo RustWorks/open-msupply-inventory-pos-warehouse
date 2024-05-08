@@ -19,7 +19,7 @@ pub struct Sensor {
     pub sensor_row: SensorRow,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct SensorFilter {
     pub id: Option<EqualFilter<String>>,
     pub name: Option<StringFilter>,

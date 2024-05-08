@@ -1,7 +1,9 @@
 use async_graphql::{dataloader::DataLoader, *};
 use chrono::{DateTime, Utc};
+use graphql_asset::types::AssetConnector;
 use graphql_asset::types::AssetFilterInput;
 use graphql_core::generic_filters::StringFilterInput;
+use graphql_core::loader::AssetByLocationLoader;
 use graphql_core::simple_generic_errors::NodeError;
 use graphql_core::standard_graphql_error::StandardGraphqlError;
 use graphql_core::ContextExt;
@@ -128,19 +130,19 @@ impl SensorNode {
             .map(LocationNode::from_domain))
     }
 
-    // pub async fn assets(&self, ctx: &Context<'_>) -> Result<AssetConnector> {
-    //     let location_id = match &self.row().location_id {
-    //         Some(location_id) => location_id,
-    //         None => return Ok(AssetConnector::new()),
-    //     };
+    pub async fn assets(&self, ctx: &Context<'_>) -> Result<AssetConnector> {
+        let location_id = match &self.row().location_id {
+            Some(location_id) => location_id,
+            None => return Ok(AssetConnector::new()),
+        };
 
-    //     let loader = ctx.get_loader::<DataLoader<AssetByLocationLoader>>();
+        let loader = ctx.get_loader::<DataLoader<AssetByLocationLoader>>();
 
-    //     let result_option = loader.load_one(location_id.to_string()).await?;
-    //     let assets = AssetConnector::from_vec(result_option.unwrap_or(vec![]));
+        let result_option = loader.load_one(location_id.to_string()).await?;
+        let assets = AssetConnector::from_vec(result_option.unwrap_or(vec![]));
 
-    //     Ok(assets)
-    // }
+        Ok(assets)
+    }
 
     pub async fn latest_temperature_log(
         &self,

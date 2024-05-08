@@ -26,7 +26,7 @@ pub enum AssetSortField {
 
 pub type AssetSort = Sort<AssetSortField>;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct AssetFilter {
     pub id: Option<EqualFilter<String>>,
     pub notes: Option<StringFilter>,

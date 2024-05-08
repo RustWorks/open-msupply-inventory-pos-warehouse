@@ -22,7 +22,7 @@ pub struct TemperatureBreach {
     pub temperature_breach_row: TemperatureBreachRow,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct TemperatureBreachFilter {
     pub id: Option<EqualFilter<String>>,
     pub r#type: Option<EqualFilter<TemperatureBreachRowType>>,

@@ -23,7 +23,7 @@ pub struct TemperatureChart {
     pub intervals: Vec<Interval>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TemperatureChartInput {
     pub from_datetime: NaiveDateTime,
     pub to_datetime: NaiveDateTime,

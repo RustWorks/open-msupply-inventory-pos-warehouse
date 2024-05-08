@@ -32,7 +32,7 @@ pub type TemperatureLogJoin = (
     Option<TemperatureBreachRow>,
 );
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct TemperatureLogFilter {
     pub id: Option<EqualFilter<String>>,
     pub store_id: Option<EqualFilter<String>>,
