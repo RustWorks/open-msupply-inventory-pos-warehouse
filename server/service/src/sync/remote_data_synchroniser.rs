@@ -130,7 +130,6 @@ impl RemoteDataSynchroniser {
         logger: &mut SyncLogger<'a>,
     ) -> Result<(), RemotePullError> {
         let step_progress = SyncStepProgress::PullRemote;
-        let sync_buffer_repository = SyncBufferRowRepository::new(connection);
 
         loop {
             let sync_batch = self.sync_api_v5.get_queued_records(batch_size).await?;
@@ -146,7 +145,12 @@ impl RemoteDataSynchroniser {
             logger.progress(step_progress.clone(), remaining)?;
 
             if number_of_pulled_records > 0 {
-                sync_buffer_repository.upsert_many(&sync_buffer_rows)?;
+                connection
+                    .transaction_sync(|connection| {
+                        let sync_buffer_repository = SyncBufferRowRepository::new(connection);
+                        sync_buffer_repository.upsert_many(&sync_buffer_rows)
+                    })
+                    .unwrap();
 
                 self.sync_api_v5.post_acknowledged_records(sync_ids).await?;
             } else {
